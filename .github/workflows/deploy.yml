@@ -1,0 +1,60 @@
+name: Deploy a GitHub Pages
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Inyectar la clave de Gemini
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          if [ -z "$GEMINI_API_KEY" ]; then
+            echo "::error::El secret GEMINI_API_KEY no está configurado en el repositorio."
+            exit 1
+          fi
+          python3 - <<'PY'
+          import os
+          path = "app.js"
+          placeholder = "__GEMINI_API_KEY__"
+          key = os.environ["GEMINI_API_KEY"]
+          with open(path, "r", encoding="utf-8") as f:
+              contenido = f.read()
+          if placeholder not in contenido:
+              raise SystemExit("El placeholder no se encontró en app.js")
+          contenido = contenido.replace(placeholder, key)
+          with open(path, "w", encoding="utf-8") as f:
+              f.write(contenido)
+          PY
+
+      - name: Preparar artefacto de Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publicar en GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

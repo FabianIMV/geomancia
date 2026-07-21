@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover">
+<title>Geomancia — El Oráculo del Veredicto</title>
+<meta name="description" content="Oráculo hermético de geomancia occidental clásica. Consulta el escudo, los testigos y el juez sobre un asunto concreto.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- PANTALLA 1: INICIO -->
+  <section id="pantalla-inicio" class="pantalla activa">
+    <div class="contenedor centrado">
+      <p class="marca">Geomancia</p>
+      <h1>El Oráculo del Veredicto</h1>
+      <p class="lead">El oráculo hermético del veredicto — el que usaban Agrippa y John Dee.</p>
+      <p class="explicacion">
+        Traza puntos como se trazaban en la arena. Este oráculo no consuela: juzga.
+        Responde preguntas concretas sobre asuntos externos mediante el Escudo, los Testigos
+        y el Juez de la geomancia clásica.
+      </p>
+      <button id="btn-comenzar" class="btn btn-primario">Comenzar consulta</button>
+    </div>
+  </section>
+
+  <!-- PANTALLA 2: PREGUNTA -->
+  <section id="pantalla-pregunta" class="pantalla">
+    <div class="contenedor">
+      <h2>La pregunta</h2>
+      <p class="guia">
+        Formula una pregunta concreta sobre un asunto externo: un resultado, una gestión,
+        algo perdido, una decisión práctica.
+      </p>
+
+      <label for="input-pregunta">Tu pregunta</label>
+      <textarea id="input-pregunta" rows="3" placeholder="Ej: ¿Conseguiré el trabajo al que postulé?" maxlength="300"></textarea>
+
+      <label for="select-tema">Tema del asunto</label>
+      <select id="select-tema"></select>
+
+      <p class="error" id="error-pregunta" hidden>Escribe una pregunta antes de continuar.</p>
+
+      <div class="fila-botones">
+        <button id="btn-atras-pregunta" class="btn btn-secundario">Atrás</button>
+        <button id="btn-a-generacion" class="btn btn-primario">Trazar las líneas</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANTALLA 3: GENERACIÓN DE LAS MADRES -->
+  <section id="pantalla-generacion" class="pantalla">
+    <div class="contenedor">
+      <h2>Generar las 4 Madres</h2>
+
+      <div class="selector-modo" id="selector-modo">
+        <button class="btn-modo activo" data-modo="toque">Modo toque</button>
+        <button class="btn-modo" data-modo="automatico">Modo automático</button>
+      </div>
+
+      <div id="bloque-toque">
+        <p class="guia">
+          Toca la zona una cantidad espontánea de veces. Al acabar el tiempo, la paridad
+          del conteo traza la línea.
+        </p>
+        <p class="progreso" id="progreso-linea">Línea 1 de 16 — Madre 1</p>
+        <div id="zona-toque" class="zona-toque">
+          <span id="contador-toque">0</span>
+          <span class="etiqueta-toque">TOCA AQUÍ</span>
+        </div>
+        <div class="barra-tiempo"><div id="barra-tiempo-relleno" class="barra-tiempo-relleno"></div></div>
+      </div>
+
+      <div id="madres-formandose" class="madres-formandose"></div>
+    </div>
+  </section>
+
+  <!-- PANTALLA 4: CÁLCULO DEL ESCUDO (animación) -->
+  <section id="pantalla-calculo" class="pantalla">
+    <div class="contenedor centrado">
+      <h2>Levantando el escudo</h2>
+      <p class="paso-calculo" id="paso-calculo">Madres…</p>
+      <div class="barra-progreso-calculo"><div id="barra-calculo-relleno" class="barra-progreso-calculo-relleno"></div></div>
+    </div>
+  </section>
+
+  <!-- PANTALLA 5: RESULTADO -->
+  <section id="pantalla-resultado" class="pantalla">
+    <div class="contenedor">
+
+      <h2>El Juez</h2>
+      <div id="juez-destacado" class="juez-destacado"></div>
+
+      <details class="bloque-escudo" open>
+        <summary>Escudo completo</summary>
+        <div id="escudo-completo"></div>
+      </details>
+
+      <details class="bloque-casas">
+        <summary>Carta de casas</summary>
+        <div id="carta-casas" class="carta-casas"></div>
+      </details>
+
+      <div class="bloque-interpretacion">
+        <h3>Interpretación</h3>
+        <div id="interpretacion-estado" class="interpretacion-estado">Consultando al oráculo…</div>
+        <div id="interpretacion-texto" class="interpretacion-texto"></div>
+        <button id="btn-reintentar" class="btn btn-secundario" hidden>Reintentar</button>
+      </div>
+
+      <div class="fila-botones fila-botones-final">
+        <button id="btn-copiar-md" class="btn btn-secundario">Copiar en Markdown</button>
+        <button id="btn-nueva-interpretacion" class="btn btn-secundario">Nueva interpretación</button>
+        <button id="btn-nueva-consulta" class="btn btn-primario">Nueva consulta</button>
+      </div>
+      <p class="aviso-copiado" id="aviso-copiado" hidden>Copiado al portapapeles.</p>
+    </div>
+  </section>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
