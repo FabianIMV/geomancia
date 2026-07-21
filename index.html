@@ -23,6 +23,38 @@
         y el Juez de la geomancia clásica.
       </p>
       <button id="btn-comenzar" class="btn btn-primario">Comenzar consulta</button>
+      <button id="btn-config-api-key" class="btn-enlace">Configurar / cambiar la clave de la API</button>
+    </div>
+  </section>
+
+  <!-- PANTALLA: CLAVE DE LA API DE GEMINI -->
+  <section id="pantalla-clave" class="pantalla">
+    <div class="contenedor centrado">
+      <h2>Tu clave de la API de Gemini</h2>
+      <p class="guia">
+        Este oráculo llama directamente a la API de Gemini desde tu navegador, así que
+        necesita tu propia clave para funcionar.
+      </p>
+      <p class="explicacion">
+        La clave se guarda solo en el almacenamiento local de este navegador. No se publica,
+        no se commitea y no se envía a ningún servidor propio — únicamente viaja a la API de
+        Gemini al generar cada interpretación. Podés cambiarla o borrarla cuando quieras.
+      </p>
+
+      <label for="input-api-key">Clave de la API de Gemini</label>
+      <input type="password" id="input-api-key" placeholder="Pega tu API key de Gemini" autocomplete="off" spellcheck="false">
+      <p class="error" id="error-api-key" hidden>Pega una clave antes de continuar.</p>
+
+      <p class="nota-api-key">
+        ¿No tenés una? Conseguila gratis en
+        <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a>.
+      </p>
+
+      <div class="fila-botones">
+        <button id="btn-cancelar-api-key" class="btn btn-secundario" hidden>Cancelar</button>
+        <button id="btn-guardar-api-key" class="btn btn-primario">Guardar y continuar</button>
+      </div>
+      <button id="btn-borrar-api-key" class="btn-enlace btn-enlace-peligro" hidden>Borrar la clave guardada</button>
     </div>
   </section>
 

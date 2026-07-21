@@ -17,6 +17,8 @@
 
 * { box-sizing: border-box; }
 
+[hidden] { display: none !important; }
+
 html, body {
   margin: 0;
   padding: 0;
@@ -162,6 +164,30 @@ textarea:focus, select:focus, input:focus {
 }
 
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-enlace {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--arena-suave);
+  font-family: inherit;
+  font-size: 0.88rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  margin-top: 0.9rem;
+  padding: 0.3rem;
+}
+.btn-enlace:hover { color: var(--cobre-fuerte); }
+.btn-enlace-peligro { color: var(--desfavorable); }
+
+.nota-api-key {
+  font-size: 0.82rem;
+  color: var(--arena-suave);
+  margin: 0.9rem 0 0;
+}
+.nota-api-key a { color: var(--cobre-fuerte); }
 
 .fila-botones {
   display: flex;
