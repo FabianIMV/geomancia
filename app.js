@@ -4,9 +4,12 @@
    CONFIGURACIÓN
    ========================================================================== */
 
-const GEMINI_MODEL = 'gemini-2.5-flash';
-const GEMINI_API_URL_BASE =
-  'https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_MODEL + ':generateContent';
+// Se prueban en orden: si un modelo falla (red, 404, respuesta vacía) se pasa al siguiente.
+const GEMINI_MODEL_CANDIDATES = ['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-flash-lite-latest'];
+
+function construirUrlGemini(modelo) {
+  return 'https://generativelanguage.googleapis.com/v1beta/models/' + modelo + ':generateContent';
+}
 
 // La clave de Gemini la aporta cada usuario y vive solo en su navegador.
 const CLAVE_LOCALSTORAGE_API_KEY = 'geomancia_gemini_api_key';
@@ -708,7 +711,20 @@ async function llamarGemini(prompt) {
     throw new Error('No hay clave de la API de Gemini configurada.');
   }
 
-  const url = GEMINI_API_URL_BASE + '?key=' + encodeURIComponent(apiKey);
+  let ultimoError = null;
+  for (const modelo of GEMINI_MODEL_CANDIDATES) {
+    try {
+      return await llamarGeminiConModelo(modelo, apiKey, prompt);
+    } catch (err) {
+      console.error('Fallo el modelo ' + modelo + ', probando el siguiente:', err);
+      ultimoError = err;
+    }
+  }
+  throw ultimoError || new Error('Ningún modelo de Gemini respondió.');
+}
+
+async function llamarGeminiConModelo(modelo, apiKey, prompt) {
+  const url = construirUrlGemini(modelo) + '?key=' + encodeURIComponent(apiKey);
   const controlador = new AbortController();
   const timeoutId = setTimeout(function () { controlador.abort(); }, TIMEOUT_GEMINI_MS);
 
@@ -732,13 +748,13 @@ async function llamarGemini(prompt) {
   }
 
   if (!respuesta.ok) {
-    throw new Error('Gemini respondió con estado ' + respuesta.status);
+    throw new Error('Gemini (' + modelo + ') respondió con estado ' + respuesta.status);
   }
 
   const data = await respuesta.json();
   const partes = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts;
   if (!partes || !partes.length) {
-    throw new Error('Respuesta de Gemini sin contenido utilizable.');
+    throw new Error('Respuesta de Gemini (' + modelo + ') sin contenido utilizable.');
   }
   return partes.map(function (p) { return p.text || ''; }).join('');
 }
