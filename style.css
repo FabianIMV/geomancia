@@ -1,0 +1,427 @@
+:root {
+  --negro: #14100c;
+  --negro-suave: #1c1712;
+  --panel: #241d16;
+  --panel-borde: #3a2f22;
+  --arena: #e8dcc4;
+  --arena-suave: #b6a887;
+  --ocre: #c98a3d;
+  --cobre: #d97b3f;
+  --cobre-fuerte: #e8934f;
+  --favorable: #7fa86b;
+  --desfavorable: #b2543f;
+  --neutro: #b6a887;
+  --radio: 10px;
+  --sombra: 0 4px 18px rgba(0, 0, 0, 0.45);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--negro);
+  color: var(--arena);
+  font-family: "Georgia", "Iowan Old Style", "Palatino Linotype", serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  min-height: 100vh;
+  line-height: 1.5;
+}
+
+#app {
+  max-width: 640px;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.pantalla {
+  display: none;
+  flex: 1;
+  padding: 1.25rem 1.1rem 3rem;
+  animation: aparecer 0.35s ease;
+}
+
+.pantalla.activa { display: block; }
+
+@keyframes aparecer {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.contenedor { width: 100%; }
+.contenedor.centrado {
+  min-height: calc(100vh - 4rem);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+}
+
+.marca {
+  text-transform: uppercase;
+  letter-spacing: 0.28em;
+  font-size: 0.72rem;
+  color: var(--cobre-fuerte);
+  margin: 0 0 0.6rem;
+}
+
+h1 {
+  font-size: 1.9rem;
+  margin: 0 0 0.9rem;
+  color: var(--arena);
+  letter-spacing: 0.01em;
+}
+
+h2 {
+  font-size: 1.35rem;
+  margin: 0.2rem 0 0.9rem;
+  color: var(--cobre-fuerte);
+  border-bottom: 1px solid var(--panel-borde);
+  padding-bottom: 0.5rem;
+}
+
+h3 {
+  font-size: 1.05rem;
+  color: var(--ocre);
+  margin: 1.1rem 0 0.5rem;
+}
+
+.lead {
+  font-size: 1.05rem;
+  color: var(--arena);
+  font-style: italic;
+  margin: 0 0 1rem;
+}
+
+.explicacion, .guia {
+  color: var(--arena-suave);
+  font-size: 0.95rem;
+  margin: 0 0 1.3rem;
+}
+
+label {
+  display: block;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--arena-suave);
+  margin: 1rem 0 0.4rem;
+}
+
+textarea, select, input[type="text"] {
+  width: 100%;
+  background: var(--panel);
+  border: 1px solid var(--panel-borde);
+  color: var(--arena);
+  border-radius: var(--radio);
+  padding: 0.75rem 0.85rem;
+  font-family: inherit;
+  font-size: 1rem;
+  resize: vertical;
+}
+
+textarea:focus, select:focus, input:focus {
+  outline: 2px solid var(--cobre);
+  outline-offset: 1px;
+}
+
+.error {
+  color: var(--desfavorable);
+  font-size: 0.9rem;
+  margin: 0.6rem 0 0;
+}
+
+.btn {
+  border: none;
+  border-radius: var(--radio);
+  padding: 0.9rem 1.1rem;
+  font-size: 1rem;
+  font-family: inherit;
+  cursor: pointer;
+  width: 100%;
+  transition: transform 0.1s ease, opacity 0.15s ease;
+}
+.btn:active { transform: scale(0.98); }
+
+.btn-primario {
+  background: linear-gradient(180deg, var(--cobre-fuerte), var(--cobre));
+  color: #1a1006;
+  font-weight: 700;
+  box-shadow: var(--sombra);
+}
+
+.btn-secundario {
+  background: var(--panel);
+  color: var(--arena);
+  border: 1px solid var(--panel-borde);
+}
+
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.fila-botones {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 1.3rem;
+}
+.fila-botones .btn { flex: 1; }
+
+.fila-botones-final {
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+/* Selector de modo */
+.selector-modo {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.2rem;
+}
+.btn-modo {
+  flex: 1;
+  padding: 0.6rem;
+  background: var(--panel);
+  border: 1px solid var(--panel-borde);
+  color: var(--arena-suave);
+  border-radius: var(--radio);
+  font-family: inherit;
+  cursor: pointer;
+}
+.btn-modo.activo {
+  background: var(--cobre);
+  color: #1a1006;
+  border-color: var(--cobre);
+  font-weight: 700;
+}
+
+/* Zona de toque */
+.progreso {
+  text-align: center;
+  color: var(--arena-suave);
+  font-size: 0.9rem;
+  margin-bottom: 0.7rem;
+}
+
+.zona-toque {
+  background: radial-gradient(circle at 50% 40%, var(--panel), var(--negro-suave));
+  border: 2px dashed var(--panel-borde);
+  border-radius: var(--radio);
+  height: 42vh;
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+.zona-toque:active { border-color: var(--cobre); }
+
+#contador-toque {
+  font-size: 3.2rem;
+  font-weight: 700;
+  color: var(--cobre-fuerte);
+  line-height: 1;
+}
+
+.etiqueta-toque {
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-size: 0.78rem;
+  color: var(--arena-suave);
+}
+
+.barra-tiempo {
+  height: 6px;
+  background: var(--panel);
+  border-radius: 4px;
+  margin-top: 0.9rem;
+  overflow: hidden;
+}
+.barra-tiempo-relleno {
+  height: 100%;
+  width: 100%;
+  background: var(--cobre);
+  transform-origin: left;
+}
+
+.madres-formandose {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin-top: 1.3rem;
+  justify-content: center;
+}
+
+/* Figura: representación de puntos */
+.figura {
+  background: var(--panel);
+  border: 1px solid var(--panel-borde);
+  border-radius: var(--radio);
+  padding: 0.7rem 0.9rem;
+  text-align: center;
+  min-width: 108px;
+}
+
+.figura-lineas {
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  align-items: center;
+  margin: 0.4rem 0;
+}
+
+.figura-linea { display: flex; gap: 0.28rem; }
+
+.punto {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--arena);
+}
+
+.figura-nombre {
+  font-size: 0.82rem;
+  color: var(--arena-suave);
+  margin-top: 0.2rem;
+}
+
+.figura-etiqueta {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--cobre-fuerte);
+}
+
+/* Cálculo animado */
+.paso-calculo {
+  font-size: 1.15rem;
+  color: var(--cobre-fuerte);
+  margin-bottom: 1.2rem;
+}
+.barra-progreso-calculo {
+  height: 8px;
+  background: var(--panel);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.barra-progreso-calculo-relleno {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--ocre), var(--cobre-fuerte));
+  transition: width 0.5s ease;
+}
+
+/* Juez destacado */
+.juez-destacado {
+  background: linear-gradient(180deg, var(--panel), var(--negro-suave));
+  border: 1px solid var(--cobre);
+  border-radius: var(--radio);
+  padding: 1.1rem;
+  text-align: center;
+  box-shadow: var(--sombra);
+  margin-bottom: 1.2rem;
+}
+
+.naturaleza {
+  display: inline-block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.2rem 0.55rem;
+  border-radius: 20px;
+  margin-top: 0.35rem;
+}
+.naturaleza.favorable { background: rgba(127,168,107,0.18); color: var(--favorable); }
+.naturaleza.desfavorable { background: rgba(178,84,63,0.18); color: var(--desfavorable); }
+.naturaleza.neutra-contextual { background: rgba(182,168,135,0.18); color: var(--neutro); }
+
+/* Escudo */
+details.bloque-escudo, details.bloque-casas {
+  background: var(--panel);
+  border: 1px solid var(--panel-borde);
+  border-radius: var(--radio);
+  padding: 0.7rem 0.9rem;
+  margin-bottom: 1rem;
+}
+summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--ocre);
+  padding: 0.3rem 0;
+}
+
+.escudo-fila-titulo {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--arena-suave);
+  margin: 0.9rem 0 0.4rem;
+}
+.escudo-fila {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
+.escudo-fila.orden-reversa { flex-direction: row-reverse; }
+
+.escudo-fila .figura { min-width: 84px; padding: 0.5rem 0.6rem; }
+.escudo-fila .figura .figura-nombre { font-size: 0.72rem; }
+.escudo-fila .punto { width: 7px; height: 7px; }
+
+.testigos-fila { display: flex; gap: 0.6rem; justify-content: center; margin-top: 0.6rem; }
+
+.reconciliador-bloque { margin-top: 0.8rem; text-align: center; }
+
+/* Carta de casas */
+.carta-casas {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+}
+.casa {
+  background: var(--negro-suave);
+  border: 1px solid var(--panel-borde);
+  border-radius: var(--radio);
+  padding: 0.5rem 0.6rem;
+  font-size: 0.82rem;
+}
+.casa.relevante {
+  border-color: var(--cobre);
+  box-shadow: 0 0 0 1px var(--cobre) inset;
+  background: rgba(217,123,63,0.08);
+}
+.casa-numero {
+  font-weight: 700;
+  color: var(--cobre-fuerte);
+}
+.casa-nombre { color: var(--arena-suave); font-size: 0.76rem; }
+.casa-figura { margin-top: 0.25rem; font-size: 0.85rem; }
+
+/* Interpretación */
+.interpretacion-estado {
+  color: var(--arena-suave);
+  font-style: italic;
+  font-size: 0.9rem;
+}
+.interpretacion-texto p { margin: 0 0 0.85rem; }
+.interpretacion-texto strong { color: var(--cobre-fuerte); }
+
+.aviso-copiado {
+  text-align: center;
+  color: var(--favorable);
+  font-size: 0.88rem;
+  margin-top: 0.6rem;
+}
+
+@media (min-width: 640px) {
+  .carta-casas { grid-template-columns: repeat(3, 1fr); }
+  .fila-botones-final { flex-direction: row; }
+}
