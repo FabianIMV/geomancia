@@ -4,14 +4,36 @@
    CONFIGURACIÓN
    ========================================================================== */
 
-// El workflow de despliegue reemplaza este placeholder por el secret real.
-// No debe aparecer en ningún otro lugar del código: el reemplazo es un sed
-// literal sobre este archivo durante el build.
-const GEMINI_API_KEY = '__GEMINI_API_KEY__';
 const GEMINI_MODEL = 'gemini-2.5-flash';
-const GEMINI_URL =
-  'https://generativelanguage.googleapis.com/v1beta/models/' +
-  GEMINI_MODEL + ':generateContent?key=' + GEMINI_API_KEY;
+const GEMINI_API_URL_BASE =
+  'https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_MODEL + ':generateContent';
+
+// La clave de Gemini la aporta cada usuario y vive solo en su navegador.
+const CLAVE_LOCALSTORAGE_API_KEY = 'geomancia_gemini_api_key';
+
+function getApiKey() {
+  try {
+    return localStorage.getItem(CLAVE_LOCALSTORAGE_API_KEY) || '';
+  } catch (err) {
+    return '';
+  }
+}
+
+function setApiKey(clave) {
+  try {
+    localStorage.setItem(CLAVE_LOCALSTORAGE_API_KEY, clave);
+  } catch (err) {
+    console.error('No se pudo guardar la clave en localStorage:', err);
+  }
+}
+
+function borrarApiKey() {
+  try {
+    localStorage.removeItem(CLAVE_LOCALSTORAGE_API_KEY);
+  } catch (err) {
+    console.error('No se pudo borrar la clave de localStorage:', err);
+  }
+}
 
 /* ==========================================================================
    DATOS: LAS 16 FIGURAS GEOMÁNTICAS
@@ -681,15 +703,28 @@ function construirPrompt() {
 const TIMEOUT_GEMINI_MS = 20000;
 
 async function llamarGemini(prompt) {
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    throw new Error('No hay clave de la API de Gemini configurada.');
+  }
+
+  const url = GEMINI_API_URL_BASE + '?key=' + encodeURIComponent(apiKey);
   const controlador = new AbortController();
   const timeoutId = setTimeout(function () { controlador.abort(); }, TIMEOUT_GEMINI_MS);
 
   let respuesta;
   try {
-    respuesta = await fetch(GEMINI_URL, {
+    respuesta = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.6,
+          topP: 0.9,
+          maxOutputTokens: 2048,
+        },
+      }),
       signal: controlador.signal,
     });
   } finally {
@@ -836,6 +871,41 @@ async function copiarMarkdown() {
 }
 
 /* ==========================================================================
+   PANTALLA: CLAVE DE LA API DE GEMINI
+   ========================================================================== */
+
+let pantallaSiguienteTrasClave = 'pantalla-pregunta';
+
+function abrirPantallaClave(siguientePantalla) {
+  pantallaSiguienteTrasClave = siguientePantalla;
+  const claveActual = getApiKey();
+  const esEdicion = !!claveActual;
+
+  document.getElementById('input-api-key').value = '';
+  document.getElementById('input-api-key').placeholder = esEdicion
+    ? 'Ya hay una clave guardada — pega una nueva para reemplazarla'
+    : 'Pega tu API key de Gemini';
+  document.getElementById('error-api-key').hidden = true;
+  document.getElementById('btn-cancelar-api-key').hidden = !esEdicion;
+  document.getElementById('btn-borrar-api-key').hidden = !esEdicion;
+
+  mostrarPantalla('pantalla-clave');
+}
+
+function guardarApiKeyDesdeFormulario() {
+  const input = document.getElementById('input-api-key');
+  const errorEl = document.getElementById('error-api-key');
+  const valor = input.value.trim();
+  if (!valor) {
+    errorEl.hidden = false;
+    return;
+  }
+  errorEl.hidden = true;
+  setApiKey(valor);
+  mostrarPantalla(pantallaSiguienteTrasClave);
+}
+
+/* ==========================================================================
    REINICIO DE CONSULTA
    ========================================================================== */
 
@@ -860,7 +930,26 @@ function inicializar() {
   poblarSelectTemas();
 
   document.getElementById('btn-comenzar').addEventListener('click', function () {
+    if (!getApiKey()) {
+      abrirPantallaClave('pantalla-pregunta');
+      return;
+    }
     mostrarPantalla('pantalla-pregunta');
+  });
+
+  document.getElementById('btn-config-api-key').addEventListener('click', function () {
+    abrirPantallaClave('pantalla-inicio');
+  });
+
+  document.getElementById('btn-guardar-api-key').addEventListener('click', guardarApiKeyDesdeFormulario);
+
+  document.getElementById('btn-cancelar-api-key').addEventListener('click', function () {
+    mostrarPantalla(pantallaSiguienteTrasClave);
+  });
+
+  document.getElementById('btn-borrar-api-key').addEventListener('click', function () {
+    borrarApiKey();
+    mostrarPantalla('pantalla-inicio');
   });
 
   document.getElementById('btn-atras-pregunta').addEventListener('click', function () {
