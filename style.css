@@ -384,6 +384,23 @@ summary {
   margin: 0.7rem 0 0;
 }
 
+/* El acceso por código queda discreto hasta que se pide el correo. */
+.bloque-codigo {
+  display: none;
+  margin-top: 1.6rem;
+  border-top: 1px solid var(--panel-borde);
+  padding-top: 0.6rem;
+}
+.bloque-codigo.visible { display: block; }
+.bloque-codigo label { text-transform: none; letter-spacing: 0; }
+.bloque-codigo .btn { margin-top: 0.7rem; }
+
+#input-codigo {
+  letter-spacing: 0.35em;
+  text-align: center;
+  font-size: 1.2rem;
+}
+
 .estado-sesion {
   color: var(--arena-suave);
   font-size: 0.82rem;
