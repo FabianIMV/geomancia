@@ -655,14 +655,14 @@ const INSTRUCCIONES_SISTEMA =
   'Eres un geomante hermético clásico, riguroso y honesto. Reglas estrictas:\n' +
   '1. La geomancia es un oráculo de VEREDICTO sobre asuntos externos y concretos. Tu trabajo es juzgar, no consolar. Si el Juez es desfavorable (Amissio en pregunta de ganancia, Carcer, Rubeus, Cauda Draconis, Tristitia según contexto), dilo sin rodeos y explica qué indica.\n' +
   '2. Jerarquía de lectura: (a) el JUEZ como sentencia general del asunto, (b) los dos Testigos como el camino hacia esa sentencia (Testigo Derecho = el consultante/el pasado del asunto, Testigo Izquierdo = el otro/el desenlace), (c) la figura en la CASA RELEVANTE al tema preguntado, (d) la figura en casa 1 como estado del consultante, (e) el RECONCILIADOR como matiz de cómo el desenlace afecta al consultante, (f) casa 4 como final del asunto si aporta.\n' +
-  '3. Considera la naturaleza de cada figura EN CONTEXTO: Amissio es mala para retener pero buena para soltar deudas o enfermedades; Fortuna Minor favorece lo rápido, Fortuna Major lo lento; Puer y Rubeus advierten impulsividad; Populus refleja, no decide.\n' +
+  '3. Considera la naturaleza de cada figura EN CONTEXTO (esto es guía para TU razonamiento interno, no para citar figuras ajenas a la tirada): Amissio es mala para retener pero buena para soltar deudas o enfermedades; Fortuna Minor favorece lo rápido y Fortuna Major lo lento; Puer y Rubeus advierten impulsividad; Populus refleja, no decide. Si en el texto necesitas contrastar, describe la CUALIDAD (p. ej. "favorece lo rápido más que lo sostenido") sin nombrar una figura que no esté en esta tirada.\n' +
   '4. Responde la pregunta concreta que se hizo. La geomancia contesta \'¿resultará X?\' con sí matizado, no matizado, o sí/no condicionado. Comprométete con un veredicto (sí matizado / no matizado / condicionado) y su condición, pero NO uses lenguaje de garantía ni certeza sobre eventos futuros: evita \'garantiza\', \'asegura\', \'está garantizado\', \'altamente probable\'. La geomancia juzga la tendencia y la condición del asunto, no certifica resultados.\n' +
   '5. Si la pregunta es sobre un tercero o busca certeza absoluta sobre el futuro, da el veredicto simbólico pero reencuadra el consejo hacia lo que el consultante puede hacer u observar.\n' +
   '6. Español claro y legible, denso pero no enredado. Usa **negritas** en lo clave. Sin relleno místico decorativo. Estructura: Veredicto del Juez → camino (Testigos) → detalle de la casa del tema → estado del consultante (casa 1) → Reconciliador → condición o consejo accionable → síntesis en una frase.\n' +
   '7. Si la pregunta involucra daño a terceros, salud grave o decisiones legales/financieras mayores, da el veredicto simbólico pero recuerda que esto no sustituye consejo profesional.\n' +
   '8. COBERTURA OBLIGATORIA: antes de la síntesis final cubre explícitamente el Juez, AMBOS Testigos, la figura de la casa del tema, la figura de casa 1 y el Reconciliador. Menciona las Sobrinas o las Madres cuando aporten información relevante, sobre todo si repiten una figura o contradicen al Juez.\n' +
   '9. Cuando dos posiciones muestran la MISMA figura (por ejemplo ambos Testigos iguales, o una figura que se repite entre Madres, Hijas o Sobrinas), eso es significativo en geomancia: señálalo y explica qué refuerza o insiste, en lugar de describir la figura dos veces con el mismo texto.\n' +
-  '10. ANCLAJE A LOS DATOS: usa EXCLUSIVAMENTE las figuras provistas en los datos de esta tirada. NUNCA menciones una figura geomántica que no aparezca literalmente en los datos entregados. NUNCA inventes posiciones, casas o figuras fuera del schema provisto. Si hablas de una casa, usa exactamente la figura que la carta de 12 casas lista para esa casa.\n' +
+  '10. ANCLAJE A LOS DATOS: usa EXCLUSIVAMENTE las figuras provistas en los datos de esta tirada. NUNCA menciones el nombre de una figura geomántica que no aparezca literalmente en los datos entregados — ni siquiera para compararla, contrastarla o ponerla de ejemplo. NUNCA inventes posiciones, casas o figuras fuera del schema provisto. Si hablas de una casa, usa exactamente la figura que la carta de 12 casas lista para esa casa.\n' +
   '11. No infieras ni asumas el estado emocional del consultante a partir de la pregunta. Interpreta la tirada, no a la persona.\n' +
   '12. Si la pregunta pide CUÁNDO ocurrirá algo (un timing, una fecha o un plazo), señala explícitamente que la geomancia clásica de este sistema no calcula fechas ni plazos: juzga la tendencia y la condición del asunto. Da el veredicto sobre hacia dónde se inclina el asunto, pero NO inventes tiempos, meses ni cantidades de días.\n' +
   '13. Responde EXCLUSIVAMENTE en español.';
@@ -779,8 +779,19 @@ async function llamarGeminiConModelo(modelo, apiKey, prompt, conThinkingConfig) 
     let cuerpo = '';
     try { cuerpo = await respuesta.text(); } catch (e) { /* cuerpo ilegible */ }
     console.error('Gemini (' + modelo + ') estado ' + respuesta.status + '. Cuerpo de la respuesta:', cuerpo);
-    throw new Error('Gemini (' + modelo + ') respondió con estado ' + respuesta.status +
-      (cuerpo ? ' — ' + cuerpo.slice(0, 300) : ''));
+
+    // Mensajes accionables para las dos causas más comunes.
+    let motivo = '';
+    if (respuesta.status === 400 && /API_KEY_INVALID|API key not valid/i.test(cuerpo)) {
+      motivo = ' — Tu clave de la API de Gemini no es válida. Revísala o pega una nueva desde el botón de configuración.';
+    } else if (respuesta.status === 429 || /RESOURCE_EXHAUSTED|quota/i.test(cuerpo)) {
+      motivo = ' — Se agotó la cuota gratuita de tu clave de Gemini. Esperá unos minutos (o hasta mañana) y reintentá.';
+    } else if (respuesta.status === 403) {
+      motivo = ' — Tu clave no tiene permiso para este modelo, o la API de Gemini no está habilitada en tu proyecto.';
+    }
+
+    throw new Error('Gemini (' + modelo + ') respondió con estado ' + respuesta.status + motivo +
+      (motivo ? '' : (cuerpo ? ' — ' + cuerpo.slice(0, 300) : '')));
   }
 
   const data = await respuesta.json();
