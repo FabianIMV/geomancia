@@ -664,7 +664,8 @@ const INSTRUCCIONES_SISTEMA =
   '9. Cuando dos posiciones muestran la MISMA figura (por ejemplo ambos Testigos iguales, o una figura que se repite entre Madres, Hijas o Sobrinas), eso es significativo en geomancia: señálalo y explica qué refuerza o insiste, en lugar de describir la figura dos veces con el mismo texto.\n' +
   '10. ANCLAJE A LOS DATOS: usa EXCLUSIVAMENTE las figuras provistas en los datos de esta tirada. NUNCA menciones una figura geomántica que no aparezca literalmente en los datos entregados. NUNCA inventes posiciones, casas o figuras fuera del schema provisto. Si hablas de una casa, usa exactamente la figura que la carta de 12 casas lista para esa casa.\n' +
   '11. No infieras ni asumas el estado emocional del consultante a partir de la pregunta. Interpreta la tirada, no a la persona.\n' +
-  '12. Responde EXCLUSIVAMENTE en español.';
+  '12. Si la pregunta pide CUÁNDO ocurrirá algo (un timing, una fecha o un plazo), señala explícitamente que la geomancia clásica de este sistema no calcula fechas ni plazos: juzga la tendencia y la condición del asunto. Da el veredicto sobre hacia dónde se inclina el asunto, pero NO inventes tiempos, meses ni cantidades de días.\n' +
+  '13. Responde EXCLUSIVAMENTE en español.';
 
 function describirFigura(puntos) {
   const f = figuraPorPuntos(puntos);
@@ -830,33 +831,67 @@ function figurasAlucinadas(texto, escudo) {
 
 const MARCA_RESPALDO = '⚠ **LECTURA DE RESPALDO — sin interpretación del modelo**';
 
+// Detecta preguntas que piden "cuándo" / un plazo, para avisar que este sistema
+// no calcula timing en vez de omitirlo en silencio.
+function preguntaTieneComponenteTemporal(pregunta) {
+  return /\b(cu[aá]ndo|cu[aá]nto tiempo|cu[aá]ntos d[ií]as|cu[aá]ntas semanas|cu[aá]ntos meses|cu[aá]ntos a[nñ]os|para cu[aá]ndo|en cu[aá]nto|qu[eé] d[ií]a|qu[eé] fecha|plazo|tardar[eé]|tardar[aá]|demorar[aá]|cu[aá]nto falta)\b/i.test(pregunta || '');
+}
+
 function generarRespaldoLocal() {
   const e = estado.escudo;
   const juez = figuraPorPuntos(e.juez);
   const testigoD = figuraPorPuntos(e.testigoDerecho);
   const testigoI = figuraPorPuntos(e.testigoIzquierdo);
+  const reconciliador = figuraPorPuntos(e.reconciliador);
   const casaRelevante = estado.tema.casa;
+  const nat = function (f) { return f.naturaleza.replace('-', ' '); };
 
-  let texto = '**Veredicto del Juez: ' + juez.nombre + ' (' + juez.traduccion + ')**\n\n';
-  texto += 'Naturaleza ' + juez.naturaleza.replace('-', ' ') + '. ' + juez.significado + '\n\n';
+  let texto = '';
+
+  if (preguntaTieneComponenteTemporal(estado.pregunta)) {
+    texto += '**Nota sobre el tiempo:** la pregunta pide *cuándo* ocurrirá algo. ' +
+      'Este oráculo no calcula fechas ni plazos: juzga la tendencia y la condición del asunto, ' +
+      'no su timing. El veredicto habla de hacia dónde se inclina el asunto, no de cuándo.\n\n';
+  }
+
+  texto += '**Veredicto del Juez: ' + juez.nombre + ' (' + juez.traduccion + ')**\n\n';
+  texto += 'Naturaleza ' + nat(juez) + '. ' + juez.significado + '\n\n';
   texto += '**Camino de los Testigos**\n\n';
-  texto += 'Testigo Derecho: ' + testigoD.nombre + ' (' + testigoD.naturaleza.replace('-', ' ') + '). ' + testigoD.significado + '\n\n';
-  texto += 'Testigo Izquierdo: ' + testigoI.nombre + ' (' + testigoI.naturaleza.replace('-', ' ') + '). ' + testigoI.significado + '\n\n';
+  texto += 'Testigo Derecho: ' + testigoD.nombre + ' (' + nat(testigoD) + '). ' + testigoD.significado + '\n\n';
+  texto += 'Testigo Izquierdo: ' + testigoI.nombre + ' (' + nat(testigoI) + '). ' + testigoI.significado + '\n\n';
 
   if (casaRelevante) {
     const figuraCasa = figuraPorPuntos(e.casas[casaRelevante - 1]);
     texto += '**Casa ' + casaRelevante + ' (' + estado.tema.etiqueta + ')**\n\n';
-    texto += figuraCasa.nombre + ' (' + figuraCasa.naturaleza.replace('-', ' ') + '). ' + figuraCasa.significado + '\n\n';
+    texto += figuraCasa.nombre + ' (' + nat(figuraCasa) + '). ' + figuraCasa.significado + '\n\n';
   }
 
+  // Casa 4 (final del asunto) y Casa 11 (frutos / esperanzas), salvo que ya sean la casa del tema.
+  if (casaRelevante !== 4) {
+    const figuraCasa4 = figuraPorPuntos(e.casas[3]);
+    texto += '**Casa 4 (final del asunto)**\n\n';
+    texto += figuraCasa4.nombre + ' (' + nat(figuraCasa4) + '). ' + figuraCasa4.significado + '\n\n';
+  }
+  if (casaRelevante !== 11) {
+    const figuraCasa11 = figuraPorPuntos(e.casas[10]);
+    texto += '**Casa 11 (frutos y esperanzas)**\n\n';
+    texto += figuraCasa11.nombre + ' (' + nat(figuraCasa11) + '). ' + figuraCasa11.significado + '\n\n';
+  }
+
+  texto += '**Reconciliador**\n\n';
+  texto += reconciliador.nombre + ' (' + nat(reconciliador) + '). ' + reconciliador.significado +
+    ' Matiza cómo el desenlace del asunto repercute sobre el consultante.\n\n';
+
   texto += '**Síntesis**\n\n';
-  let sintesis = 'El Juez **' + juez.nombre + '**, de naturaleza ' + juez.naturaleza.replace('-', ' ') +
+  let sintesis = 'El Juez **' + juez.nombre + '**, de naturaleza ' + nat(juez) +
     ', sentencia el asunto: ' + juez.significado;
   if (casaRelevante) {
     const figuraCasa = figuraPorPuntos(e.casas[casaRelevante - 1]);
     sintesis += ' En la casa ' + casaRelevante + ' (' + estado.tema.etiqueta + ') aparece **' +
-      figuraCasa.nombre + '** (' + figuraCasa.naturaleza.replace('-', ' ') + '), que matiza ese veredicto en el terreno preguntado.';
+      figuraCasa.nombre + '** (' + nat(figuraCasa) + '), que matiza ese veredicto en el terreno preguntado.';
   }
+  sintesis += ' El Reconciliador **' + reconciliador.nombre + '** (' + nat(reconciliador) +
+    ') cierra indicando cómo eso repercute sobre el consultante.';
   texto += sintesis;
 
   return texto;
