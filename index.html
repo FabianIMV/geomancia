@@ -171,9 +171,20 @@
 
       <div class="bloque-interpretacion">
         <h3>Interpretación</h3>
-        <div id="interpretacion-estado" class="interpretacion-estado">Consultando al oráculo…</div>
+
+        <div id="interpretacion-cargando" class="interpretacion-cargando" hidden>
+          <div id="figura-cargando" class="figura-cargando" aria-hidden="true"></div>
+          <p id="texto-cargando" class="texto-cargando">Consultando al oráculo…</p>
+        </div>
+
+        <div id="interpretacion-estado" class="interpretacion-estado" hidden></div>
         <div id="interpretacion-texto" class="interpretacion-texto"></div>
         <button id="btn-reintentar" class="btn btn-secundario" hidden>Reintentar</button>
+
+        <div id="bloque-guardado" class="bloque-guardado" hidden>
+          <button id="btn-guardar-bitacora" class="btn btn-secundario">Guardar en mi bitácora</button>
+          <p class="aviso-guardado" id="aviso-guardado" hidden></p>
+        </div>
       </div>
 
       <div class="fila-botones fila-botones-final">
@@ -182,7 +193,6 @@
         <button id="btn-nueva-consulta" class="btn btn-primario">Nueva consulta</button>
       </div>
       <p class="aviso-copiado" id="aviso-copiado" hidden>Copiado al portapapeles.</p>
-      <p class="aviso-guardado" id="aviso-guardado" hidden>Guardado en tu bitácora.</p>
     </div>
   </section>
 
