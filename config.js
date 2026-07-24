@@ -22,6 +22,6 @@
    ========================================================================== */
 
 window.GEOMANCIA_CONFIG = {
-  SUPABASE_URL: '',
-  SUPABASE_ANON_KEY: '',
+  SUPABASE_URL: 'https://cvzcjrhxifecieeefdpq.supabase.co',
+  SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2emNqcmh4aWZlY2llZWVmZHBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5MTUzNDYsImV4cCI6MjEwMDQ5MTM0Nn0.05a_l0G6rx-YbxZElo80k16lYb1YW2L0z7ZngpB1W78',
 };
