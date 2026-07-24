@@ -74,16 +74,26 @@
         Tus consultas son privadas — solo vos podés leerlas.
       </p>
 
+      <p class="error" id="error-sesion" hidden></p>
+
       <label for="input-email">Tu email</label>
       <input type="email" id="input-email" placeholder="tunombre@ejemplo.com" autocomplete="email" spellcheck="false">
       <p class="error" id="error-email" hidden>Escribí un email válido.</p>
       <p class="aviso-enlace" id="aviso-enlace" hidden>
-        Te enviamos un enlace de acceso. Abrilo desde este mismo dispositivo.
+        Te lo enviamos. Podés abrir el enlace del correo, o escribir acá abajo
+        el código de 6 dígitos que viene en el mismo mensaje.
       </p>
 
       <div class="fila-botones">
         <button id="btn-volver-sesion" class="btn btn-secundario">Atrás</button>
-        <button id="btn-enviar-enlace" class="btn btn-primario">Enviarme el enlace</button>
+        <button id="btn-enviar-enlace" class="btn btn-primario">Enviarme el acceso</button>
+      </div>
+
+      <div class="bloque-codigo" id="bloque-codigo">
+        <label for="input-codigo">¿El enlace no funciona? Código de 6 dígitos</label>
+        <input type="text" id="input-codigo" placeholder="123456" inputmode="numeric"
+               autocomplete="one-time-code" maxlength="6" spellcheck="false">
+        <button id="btn-entrar-codigo" class="btn btn-secundario">Entrar con el código</button>
       </div>
     </div>
   </section>

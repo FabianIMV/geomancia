@@ -1193,6 +1193,43 @@ function salirDePantallaClave() {
    UI DE SESIÓN Y BITÁCORA
    ========================================================================== */
 
+/* Lee los parámetros que Supabase devuelve al volver del enlace de acceso.
+   Pueden venir en el fragmento (#) o en la query (?). */
+function parametrosDeRetornoAuth() {
+  const salida = {};
+  ['hash', 'search'].forEach(function (parte) {
+    const crudo = window.location[parte] || '';
+    if (crudo.length < 2) return;
+    new URLSearchParams(crudo.slice(1)).forEach(function (valor, clave) {
+      salida[clave] = valor;
+    });
+  });
+  return salida;
+}
+
+function limpiarUrlDeAuth() {
+  history.replaceState(null, '', window.location.pathname);
+}
+
+/* Muestra en pantalla lo que pasó al volver del enlace. Sin esto, un enlace
+   vencido o un redirect no autorizado dejaban la app en la pantalla inicial
+   sin ninguna explicación. */
+function mostrarErrorSesion(mensaje) {
+  const el = document.getElementById('error-sesion');
+  if (!el) return;
+  if (!mensaje) {
+    el.hidden = true;
+    return;
+  }
+  el.textContent = mensaje;
+  el.hidden = false;
+}
+
+const MENSAJES_ERROR_AUTH = {
+  otp_expired: 'El enlace ya venció o fue usado. Los filtros de correo a veces lo abren primero y lo consumen. Pedí uno nuevo, o entrá con el código de 6 dígitos.',
+  access_denied: 'El enlace no pudo validarse. Pedí uno nuevo, o entrá con el código de 6 dígitos.',
+};
+
 // Recupera la sesión existente (el enlace de acceso vuelve con el token en la
 // URL) y queda escuchando los cambios de sesión.
 function inicializarSesion() {
@@ -1207,14 +1244,48 @@ function inicializarSesion() {
     actualizarUiSesion();
   });
 
+  const params = parametrosDeRetornoAuth();
+  const veniaDeUnEnlace = !!(params.access_token || params.code || params.error || params.error_code);
+
   cliente.auth.getSession().then(function (res) {
     usuarioActual = (res && res.data && res.data.session && res.data.session.user) || null;
     actualizarUiSesion();
-    // Limpia el token del enlace de acceso de la barra de direcciones.
-    if (usuarioActual && window.location.hash.indexOf('access_token') !== -1) {
-      history.replaceState(null, '', window.location.pathname + window.location.search);
+
+    if (usuarioActual) {
+      mostrarErrorSesion('');
+      if (veniaDeUnEnlace) limpiarUrlDeAuth();
+      return;
     }
+
+    if (!veniaDeUnEnlace) return;
+
+    // Se volvió de un enlace pero no hay sesión: hay que decir por qué.
+    const codigo = params.error_code || params.error || '';
+    const detalle = params.error_description ? decodeURIComponent(params.error_description.replace(/\+/g, ' ')) : '';
+    const conocido = MENSAJES_ERROR_AUTH[codigo];
+    console.error('Retorno de enlace sin sesión. Parámetros:', params, 'getSession:', res);
+    mostrarErrorSesion(
+      conocido ||
+      ('No se pudo iniciar sesión con el enlace' + (codigo ? ' (' + codigo + ')' : '') + '. ' +
+       (detalle || 'Pedí uno nuevo, o entrá con el código de 6 dígitos.'))
+    );
+    mostrarPantalla('pantalla-sesion');
+    limpiarUrlDeAuth();
   });
+}
+
+/* Acceso con el código de 6 dígitos del correo. Es más robusto que el enlace
+   en el celular: no depende del redirect ni de en qué navegador se abra, y no
+   lo pueden consumir los escáneres de correo. */
+async function entrarConCodigo(email, codigo) {
+  const cliente = iniciarSupabase();
+  if (!cliente) throw new Error('La bitácora no está configurada.');
+  const { error } = await cliente.auth.verifyOtp({
+    email: email,
+    token: codigo,
+    type: 'email',
+  });
+  if (error) throw new Error(error.message);
 }
 
 function actualizarUiSesion() {
@@ -1252,18 +1323,53 @@ async function enviarEnlaceDesdeFormulario() {
   }
 
   errorEl.hidden = true;
+  mostrarErrorSesion('');
   boton.disabled = true;
   boton.textContent = 'Enviando…';
   try {
     await enviarEnlaceDeAcceso(email);
     avisoEl.hidden = false;
+    document.getElementById('bloque-codigo').classList.add('visible');
   } catch (err) {
     console.error('No se pudo enviar el enlace de acceso:', err);
     errorEl.textContent = 'No se pudo enviar el enlace: ' + err.message;
     errorEl.hidden = false;
   } finally {
     boton.disabled = false;
-    boton.textContent = 'Enviarme el enlace';
+    boton.textContent = 'Enviarme el acceso';
+  }
+}
+
+async function entrarConCodigoDesdeFormulario() {
+  const email = document.getElementById('input-email').value.trim();
+  const codigo = document.getElementById('input-codigo').value.trim();
+  const errorEl = document.getElementById('error-email');
+  const boton = document.getElementById('btn-entrar-codigo');
+
+  if (!email) {
+    errorEl.textContent = 'Escribí arriba el email al que llegó el código.';
+    errorEl.hidden = false;
+    return;
+  }
+  if (!/^\d{6}$/.test(codigo)) {
+    errorEl.textContent = 'El código son 6 dígitos.';
+    errorEl.hidden = false;
+    return;
+  }
+
+  errorEl.hidden = true;
+  mostrarErrorSesion('');
+  boton.disabled = true;
+  boton.textContent = 'Entrando…';
+  try {
+    await entrarConCodigo(email, codigo);
+    mostrarPantalla('pantalla-inicio');
+  } catch (err) {
+    console.error('No se pudo entrar con el código:', err);
+    mostrarErrorSesion('El código no sirvió: ' + err.message);
+  } finally {
+    boton.disabled = false;
+    boton.textContent = 'Entrar con el código';
   }
 }
 
@@ -1453,8 +1559,11 @@ function inicializar() {
   document.getElementById('btn-sesion').addEventListener('click', function () {
     document.getElementById('error-email').hidden = true;
     document.getElementById('aviso-enlace').hidden = true;
+    mostrarErrorSesion('');
     mostrarPantalla('pantalla-sesion');
   });
+
+  document.getElementById('btn-entrar-codigo').addEventListener('click', entrarConCodigoDesdeFormulario);
 
   document.getElementById('btn-volver-sesion').addEventListener('click', function () {
     mostrarPantalla('pantalla-inicio');
