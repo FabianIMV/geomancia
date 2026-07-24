@@ -467,8 +467,8 @@ function calcularEscudo(madres) {
 const estado = {
   pregunta: '',
   tema: TEMAS[TEMAS.length - 1],
-  modoGeneracion: 'toque',
   lineas: [],       // 16 valores (1|2), en orden de generación
+  puntosPorLinea: [], // cuántos puntos se trazaron en cada línea (su paridad da el valor)
   escudo: null,
   interpretacion: '',
   fecha: null,
@@ -548,82 +548,76 @@ function poblarSelectTemas() {
    PANTALLA 3: GENERACIÓN DE LÍNEAS
    ========================================================================== */
 
-const DURACION_TOQUE_MS = 3000;
-let toqueCount = 0;
-let toqueIntervalo = null;
-let toqueInicio = 0;
-let lineaActual = 0;
+/* Bytes de un generador criptográficamente seguro (CSPRNG). A diferencia de
+   Math.random(), que en varios motores es un PRNG rápido pero de baja calidad
+   y con semilla predecible, crypto.getRandomValues toma entropía del sistema
+   operativo. */
+function bytesAleatorios(cantidad) {
+  const cripto = typeof crypto !== 'undefined' ? crypto : null;
+  if (cripto && typeof cripto.getRandomValues === 'function') {
+    return cripto.getRandomValues(new Uint8Array(cantidad));
+  }
+  // Solo para navegadores sin Web Crypto. No debería alcanzarse en la práctica.
+  console.warn('crypto.getRandomValues no está disponible; se recurre a Math.random().');
+  const salida = new Uint8Array(cantidad);
+  for (let i = 0; i < cantidad; i++) salida[i] = Math.floor(Math.random() * 256);
+  return salida;
+}
+
+/* Traza las 16 líneas como se hacían en la arena: cada línea es una hilera de
+   puntos y lo que decide su valor es la PARIDAD de cuántos hay. Se sortea un
+   número de puntos por línea y se toma su paridad.
+
+   Sobre el sesgo: se sortean puntos en el rango 8..23 (16 valores posibles,
+   mitad pares y mitad impares) usando el byte completo módulo 16. Como 256 es
+   múltiplo exacto de 16, no hay sesgo de módulo: cada cantidad —y por lo tanto
+   cada paridad— sale con probabilidad idéntica. */
+const PUNTOS_MINIMOS_POR_LINEA = 8;
+const RANGO_PUNTOS_POR_LINEA = 16; // divide exacto a 256 ⇒ sin sesgo de módulo
+
+function trazarLineas() {
+  const bytes = bytesAleatorios(16);
+  const lineas = [];
+  const puntosPorLinea = [];
+  for (let i = 0; i < 16; i++) {
+    const puntos = PUNTOS_MINIMOS_POR_LINEA + (bytes[i] % RANGO_PUNTOS_POR_LINEA);
+    puntosPorLinea.push(puntos);
+    lineas.push(puntos % 2 === 1 ? 1 : 2); // impar ⇒ punto simple, par ⇒ doble
+  }
+  return { lineas: lineas, puntosPorLinea: puntosPorLinea };
+}
+
+const DEMORA_REVELADO_MADRE_MS = 420;
+let reveladoIntervalo = null;
 
 function iniciarGeneracion() {
-  estado.lineas = [];
-  lineaActual = 0;
-  document.getElementById('madres-formandose').innerHTML = '';
+  clearTimeout(reveladoIntervalo);
+  const trazado = trazarLineas();
+  estado.lineas = trazado.lineas;
+  estado.puntosPorLinea = trazado.puntosPorLinea;
 
-  if (estado.modoGeneracion === 'automatico') {
-    for (let i = 0; i < 16; i++) {
-      estado.lineas.push(Math.random() < 0.5 ? 1 : 2);
-    }
-    mostrarMadresFormadas();
-    setTimeout(irAPantallaCalculo, 500);
-    return;
-  }
-
-  document.getElementById('bloque-toque').hidden = false;
-  prepararLinea();
-}
-
-function prepararLinea() {
-  const madreNum = Math.floor(lineaActual / 4) + 1;
-  document.getElementById('progreso-linea').textContent =
-    'Línea ' + (lineaActual + 1) + ' de 16 — Madre ' + madreNum;
-  toqueCount = 0;
-  document.getElementById('contador-toque').textContent = '0';
-  document.getElementById('barra-tiempo-relleno').style.width = '100%';
-
-  const zona = document.getElementById('zona-toque');
-  const manejarToque = function (ev) {
-    ev.preventDefault();
-    toqueCount++;
-    document.getElementById('contador-toque').textContent = String(toqueCount);
-  };
-  zona.onpointerdown = manejarToque;
-
-  toqueInicio = Date.now();
-  clearInterval(toqueIntervalo);
-  toqueIntervalo = setInterval(function () {
-    const transcurrido = Date.now() - toqueInicio;
-    const restante = Math.max(0, DURACION_TOQUE_MS - transcurrido);
-    document.getElementById('barra-tiempo-relleno').style.width = (100 * restante / DURACION_TOQUE_MS) + '%';
-    if (transcurrido >= DURACION_TOQUE_MS) {
-      clearInterval(toqueIntervalo);
-      zona.onpointerdown = null;
-      finalizarLinea();
-    }
-  }, 50);
-}
-
-function finalizarLinea() {
-  const valor = toqueCount % 2 === 1 ? 1 : 2;
-  estado.lineas.push(valor);
-  lineaActual++;
-
-  if (lineaActual % 4 === 0) {
-    mostrarMadresFormadas();
-  }
-
-  if (lineaActual >= 16) {
-    document.getElementById('bloque-toque').hidden = true;
-    setTimeout(irAPantallaCalculo, 400);
-    return;
-  }
-
-  setTimeout(prepararLinea, 350);
-}
-
-function mostrarMadresFormadas() {
   const cont = document.getElementById('madres-formandose');
   cont.innerHTML = '';
-  const numMadres = Math.floor(estado.lineas.length / 4);
+
+  // Las Madres se revelan de a una, para que la tirada se lea formándose.
+  let reveladas = 0;
+  const revelar = function () {
+    reveladas++;
+    mostrarMadresFormadas(reveladas);
+    if (reveladas >= 4) {
+      reveladoIntervalo = setTimeout(irAPantallaCalculo, DEMORA_REVELADO_MADRE_MS);
+      return;
+    }
+    reveladoIntervalo = setTimeout(revelar, DEMORA_REVELADO_MADRE_MS);
+  };
+  reveladoIntervalo = setTimeout(revelar, 250);
+}
+
+function mostrarMadresFormadas(cuantas) {
+  const cont = document.getElementById('madres-formandose');
+  cont.innerHTML = '';
+  const disponibles = Math.floor(estado.lineas.length / 4);
+  const numMadres = typeof cuantas === 'number' ? Math.min(cuantas, disponibles) : disponibles;
   for (let m = 0; m < numMadres; m++) {
     const puntos = estado.lineas.slice(m * 4, m * 4 + 4);
     cont.appendChild(crearElementoFigura(puntos, { etiqueta: 'Madre ' + (m + 1) }));
@@ -1517,19 +1511,7 @@ function inicializar() {
     const temaId = document.getElementById('select-tema').value;
     estado.tema = TEMAS.find(function (t) { return t.id === temaId; }) || TEMAS[TEMAS.length - 1];
     mostrarPantalla('pantalla-generacion');
-    document.getElementById('bloque-toque').hidden = estado.modoGeneracion !== 'toque';
     iniciarGeneracion();
-  });
-
-  document.querySelectorAll('.btn-modo').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      document.querySelectorAll('.btn-modo').forEach(function (b) { b.classList.remove('activo'); });
-      btn.classList.add('activo');
-      estado.modoGeneracion = btn.dataset.modo;
-      clearInterval(toqueIntervalo);
-      document.getElementById('bloque-toque').hidden = estado.modoGeneracion !== 'toque';
-      iniciarGeneracion();
-    });
   });
 
   document.getElementById('btn-reintentar').addEventListener('click', solicitarInterpretacion);
