@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover">
 <title>Geomancia — El Oráculo del Veredicto</title>
 <meta name="description" content="Oráculo hermético de geomancia occidental clásica. Consulta el escudo, los testigos y el juez sobre un asunto concreto.">
+<meta name="theme-color" content="#14100c">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icono-192.png">
+<link rel="apple-touch-icon" href="icono-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Geomancia">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -97,6 +104,19 @@
       <h2>Mi bitácora</h2>
       <p class="estado-bitacora" id="estado-bitacora">Cargando…</p>
       <div id="lista-bitacora" class="lista-bitacora"></div>
+
+      <div class="bloque-exportar" id="bloque-exportar" hidden>
+        <h3>Respaldo</h3>
+        <p class="explicacion">
+          Descargá toda tu bitácora. El Markdown es para leer y guardar; el JSON
+          conserva cada tirada tal cual, para recuperarla o analizarla después.
+        </p>
+        <div class="fila-botones">
+          <button id="btn-exportar-md" class="btn btn-secundario">Bajar Markdown</button>
+          <button id="btn-exportar-json" class="btn btn-secundario">Bajar JSON</button>
+        </div>
+        <p class="aviso-guardado" id="aviso-exportado" hidden></p>
+      </div>
 
       <div class="fila-botones fila-botones-final">
         <button id="btn-volver-bitacora" class="btn btn-secundario">Atrás</button>

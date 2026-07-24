@@ -475,6 +475,24 @@ summary {
   margin: 1.2rem 0;
 }
 
+/* Respaldo de la bitácora */
+.bloque-exportar {
+  margin-top: 1.6rem;
+  border-top: 1px solid var(--panel-borde);
+  padding-top: 0.4rem;
+}
+.bloque-exportar .explicacion { margin-bottom: 0.6rem; }
+
+/* El escudo dentro de una entrada de la bitácora, algo más contenido */
+.entrada-cuerpo details.bloque-escudo,
+.entrada-cuerpo details.bloque-casas {
+  background: var(--negro-suave);
+  margin-top: 0.8rem;
+  margin-bottom: 0;
+}
+.entrada-cuerpo details.bloque-casas { margin-bottom: 0.4rem; }
+.entrada-cuerpo .casa-figura { font-size: 0.78rem; }
+
 .estado-sesion {
   color: var(--arena-suave);
   font-size: 0.82rem;

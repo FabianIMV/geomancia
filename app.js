@@ -769,10 +769,10 @@ function renderizarJuezDestacado() {
   cont.appendChild(el);
 }
 
-function renderizarEscudoCompleto() {
-  const cont = document.getElementById('escudo-completo');
+/* Dibuja el escudo dentro de un contenedor. Sirve tanto para el resultado
+   recién calculado como para una consulta guardada en la bitácora. */
+function pintarEscudoEn(cont, escudo) {
   cont.innerHTML = '';
-  const e = estado.escudo;
 
   function tituloFila(texto) {
     const t = document.createElement('div');
@@ -790,28 +790,27 @@ function renderizarEscudoCompleto() {
   }
 
   tituloFila('Madres e Hijas (derecha → izquierda)');
-  const madresHijas = [e.hijas[3], e.hijas[2], e.hijas[1], e.hijas[0], e.madres[3], e.madres[2], e.madres[1], e.madres[0]];
-  const etiquetasMH = ['Hija 4', 'Hija 3', 'Hija 2', 'Hija 1', 'Madre 4', 'Madre 3', 'Madre 2', 'Madre 1'];
-  filaDe(madresHijas, etiquetasMH);
+  const madresHijas = [
+    escudo.hijas[3], escudo.hijas[2], escudo.hijas[1], escudo.hijas[0],
+    escudo.madres[3], escudo.madres[2], escudo.madres[1], escudo.madres[0],
+  ];
+  filaDe(madresHijas, ['Hija 4', 'Hija 3', 'Hija 2', 'Hija 1', 'Madre 4', 'Madre 3', 'Madre 2', 'Madre 1']);
 
   tituloFila('Sobrinas');
-  filaDe(e.sobrinas, ['Sobrina 1', 'Sobrina 2', 'Sobrina 3', 'Sobrina 4']);
+  filaDe(escudo.sobrinas, ['Sobrina 1', 'Sobrina 2', 'Sobrina 3', 'Sobrina 4']);
 
   tituloFila('Testigos');
-  filaDe([e.testigoIzquierdo, e.testigoDerecho], ['Testigo Izquierdo', 'Testigo Derecho']);
+  filaDe([escudo.testigoIzquierdo, escudo.testigoDerecho], ['Testigo Izquierdo', 'Testigo Derecho']);
 
   tituloFila('Juez y Reconciliador');
-  filaDe([e.juez, e.reconciliador], ['Juez', 'Reconciliador']);
+  filaDe([escudo.juez, escudo.reconciliador], ['Juez', 'Reconciliador']);
 }
 
-function renderizarCartaCasas() {
-  const cont = document.getElementById('carta-casas');
+/* Dibuja la carta de 12 casas, marcando la casa del tema consultado. */
+function pintarCartaCasasEn(cont, casas, casaRelevante) {
   cont.innerHTML = '';
-  const casaRelevante = estado.tema.casa;
-
   CASAS.forEach(function (casaInfo, idx) {
-    const puntos = estado.escudo.casas[idx];
-    const figura = figuraPorPuntos(puntos);
+    const figura = figuraPorPuntos(casas[idx]);
     const div = document.createElement('div');
     div.className = 'casa' + (casaInfo.numero === casaRelevante ? ' relevante' : '');
 
@@ -827,11 +826,19 @@ function renderizarCartaCasas() {
 
     const fig = document.createElement('div');
     fig.className = 'casa-figura';
-    fig.textContent = figura.nombre;
+    fig.textContent = figura.nombre + ' · ' + figura.naturaleza.replace('-', ' ');
     div.appendChild(fig);
 
     cont.appendChild(div);
   });
+}
+
+function renderizarEscudoCompleto() {
+  pintarEscudoEn(document.getElementById('escudo-completo'), estado.escudo);
+}
+
+function renderizarCartaCasas() {
+  pintarCartaCasasEn(document.getElementById('carta-casas'), estado.escudo.casas, estado.tema.casa);
 }
 
 /* ==========================================================================
@@ -1676,6 +1683,9 @@ async function abrirBitacora() {
   estadoEl.textContent = 'Cargando…';
   listaEl.innerHTML = '';
 
+  const bloqueExportar = document.getElementById('bloque-exportar');
+  bloqueExportar.hidden = true;
+
   let consultas;
   try {
     consultas = await listarConsultas();
@@ -1684,15 +1694,33 @@ async function abrirBitacora() {
     return;
   }
 
+  consultasCargadas = consultas;
+
   if (!consultas.length) {
     estadoEl.textContent = 'Todavía no hay consultas guardadas.';
     return;
   }
 
-  estadoEl.hidden = true;
+  estadoEl.hidden = false;
+  estadoEl.textContent = resumenDeBitacora(consultas);
   consultas.forEach(function (c) {
     listaEl.appendChild(crearTarjetaBitacora(c));
   });
+  bloqueExportar.hidden = false;
+}
+
+/* Una línea con el estado de la bitácora: cuántas hay y cómo viene el acierto. */
+function resumenDeBitacora(consultas) {
+  const verificadas = consultas.filter(function (c) { return c.acierto && c.acierto !== 'sin_verificar'; });
+  const base = consultas.length + (consultas.length === 1 ? ' consulta' : ' consultas');
+  if (!verificadas.length) {
+    return base + ' · ninguna verificada todavía';
+  }
+  const aciertos = verificadas.filter(function (c) { return c.acierto === 'acerto'; }).length;
+  const parciales = verificadas.filter(function (c) { return c.acierto === 'parcial'; }).length;
+  return base + ' · ' + verificadas.length + ' verificadas · ' +
+    aciertos + ' acertó, ' + parciales + ' parcial, ' +
+    (verificadas.length - aciertos - parciales) + ' falló';
 }
 
 function crearTarjetaBitacora(consulta) {
@@ -1726,10 +1754,191 @@ function crearTarjetaBitacora(consulta) {
   interp.innerHTML = renderizarMarkdownBasico(consulta.interpretacion);
   cuerpo.appendChild(interp);
 
+  cuerpo.appendChild(crearEscudoDeConsulta(consulta));
   cuerpo.appendChild(crearFormularioVerificacion(consulta));
   cuerpo.appendChild(crearBorradoDeEntrada(consulta, item));
   item.appendChild(cuerpo);
   return item;
+}
+
+/* ==========================================================================
+   RESPALDO: EXPORTAR LA BITÁCORA ENTERA
+   ========================================================================== */
+
+// Consultas de la última carga, para exportar sin volver a pedirlas.
+let consultasCargadas = [];
+
+function bitacoraAMarkdown(consultas) {
+  const nombreDe = function (puntos) {
+    const f = figuraPorPuntos(puntos);
+    return f.nombre + ' (' + f.naturaleza.replace('-', ' ') + ')';
+  };
+  const lineas = [];
+  lineas.push('# Bitácora de geomancia');
+  lineas.push('');
+  lineas.push('**Exportada:** ' + new Date().toLocaleString('es-ES'));
+  lineas.push('**Consultas:** ' + consultas.length);
+
+  const verificadas = consultas.filter(function (c) { return c.acierto && c.acierto !== 'sin_verificar'; });
+  if (verificadas.length) {
+    const aciertos = verificadas.filter(function (c) { return c.acierto === 'acerto'; }).length;
+    const parciales = verificadas.filter(function (c) { return c.acierto === 'parcial'; }).length;
+    const fallos = verificadas.filter(function (c) { return c.acierto === 'fallo'; }).length;
+    lineas.push('**Verificadas:** ' + verificadas.length +
+      ' — acertó ' + aciertos + ', parcial ' + parciales + ', falló ' + fallos);
+  }
+  lineas.push('');
+
+  consultas.forEach(function (c, i) {
+    lineas.push('---');
+    lineas.push('');
+    lineas.push('## ' + (i + 1) + '. ' + c.pregunta);
+    lineas.push('');
+    lineas.push('**Fecha:** ' + fechaLegible(c.creada_en));
+    lineas.push('**Tema:** ' + c.tema_etiqueta + (c.casa_tema ? ' (casa ' + c.casa_tema + ')' : ''));
+    lineas.push('**Resultado registrado:** ' + (ETIQUETAS_ACIERTO[c.acierto || 'sin_verificar']));
+    lineas.push('');
+
+    lineas.push('### Madres');
+    c.madres.forEach(function (m, n) { lineas.push('- Madre ' + (n + 1) + ': ' + nombreDe(m)); });
+    lineas.push('');
+    lineas.push('### Hijas');
+    c.hijas.forEach(function (h, n) { lineas.push('- Hija ' + (n + 1) + ': ' + nombreDe(h)); });
+    lineas.push('');
+    lineas.push('### Escudo');
+    c.sobrinas.forEach(function (s, n) { lineas.push('- Sobrina ' + (n + 1) + ': ' + nombreDe(s)); });
+    lineas.push('- Testigo Derecho: ' + nombreDe(c.testigo_derecho));
+    lineas.push('- Testigo Izquierdo: ' + nombreDe(c.testigo_izquierdo));
+    lineas.push('- **Juez: ' + nombreDe(c.juez) + '**');
+    lineas.push('- Reconciliador: ' + nombreDe(c.reconciliador));
+    lineas.push('');
+    lineas.push('### Carta de 12 casas');
+    CASAS.forEach(function (casaInfo, idx) {
+      const marca = casaInfo.numero === c.casa_tema ? ' ← **casa del tema**' : '';
+      lineas.push('- Casa ' + casaInfo.numero + ' (' + casaInfo.significado + '): ' + nombreDe(c.casas[idx]) + marca);
+    });
+    lineas.push('');
+    lineas.push('### Interpretación');
+    lineas.push('');
+    lineas.push(c.interpretacion || '(sin interpretación)');
+    lineas.push('');
+    lineas.push('### Qué ocurrió realmente');
+    lineas.push('');
+    lineas.push(c.resultado_real || '(sin verificar)');
+    lineas.push('');
+  });
+
+  return lineas.join('\n');
+}
+
+function descargarArchivo(nombre, contenido, tipo) {
+  const blob = new Blob([contenido], { type: tipo });
+  const url = URL.createObjectURL(blob);
+  const enlace = document.createElement('a');
+  enlace.href = url;
+  enlace.download = nombre;
+  document.body.appendChild(enlace);
+  enlace.click();
+  document.body.removeChild(enlace);
+  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+}
+
+function sufijoDeFecha() {
+  const d = new Date();
+  const dos = function (n) { return String(n).padStart(2, '0'); };
+  return d.getFullYear() + '-' + dos(d.getMonth() + 1) + '-' + dos(d.getDate());
+}
+
+function avisarExportacion(mensaje) {
+  const aviso = document.getElementById('aviso-exportado');
+  if (!aviso) return;
+  aviso.textContent = mensaje;
+  aviso.hidden = false;
+  setTimeout(function () { aviso.hidden = true; }, 4000);
+}
+
+function exportarBitacoraMarkdown() {
+  if (!consultasCargadas.length) return;
+  descargarArchivo('bitacora-geomancia-' + sufijoDeFecha() + '.md',
+    bitacoraAMarkdown(consultasCargadas), 'text/markdown;charset=utf-8');
+  avisarExportacion('Markdown generado (' + consultasCargadas.length + ' consultas).');
+}
+
+function exportarBitacoraJson() {
+  if (!consultasCargadas.length) return;
+  const datos = {
+    exportado_en: new Date().toISOString(),
+    total: consultasCargadas.length,
+    consultas: consultasCargadas,
+  };
+  descargarArchivo('bitacora-geomancia-' + sufijoDeFecha() + '.json',
+    JSON.stringify(datos, null, 2), 'application/json;charset=utf-8');
+  avisarExportacion('JSON generado (' + consultasCargadas.length + ' consultas).');
+}
+
+/* Redibuja el escudo y las 12 casas de una consulta guardada, para poder
+   auditar contra qué figuras se escribió la interpretación. */
+function crearEscudoDeConsulta(consulta) {
+  const escudo = {
+    madres: consulta.madres,
+    hijas: consulta.hijas,
+    sobrinas: consulta.sobrinas,
+    testigoDerecho: consulta.testigo_derecho,
+    testigoIzquierdo: consulta.testigo_izquierdo,
+    juez: consulta.juez,
+    reconciliador: consulta.reconciliador,
+  };
+
+  const envoltorio = document.createElement('div');
+
+  const detEscudo = document.createElement('details');
+  detEscudo.className = 'bloque-escudo';
+  const resEscudo = document.createElement('summary');
+  resEscudo.textContent = 'Escudo completo';
+  detEscudo.appendChild(resEscudo);
+  const contEscudo = document.createElement('div');
+  detEscudo.appendChild(contEscudo);
+  envoltorio.appendChild(detEscudo);
+
+  const detCasas = document.createElement('details');
+  detCasas.className = 'bloque-casas';
+  const resCasas = document.createElement('summary');
+  resCasas.textContent = 'Carta de casas';
+  detCasas.appendChild(resCasas);
+  const contCasas = document.createElement('div');
+  contCasas.className = 'carta-casas';
+  detCasas.appendChild(contCasas);
+  envoltorio.appendChild(detCasas);
+
+  // Se dibuja recién al abrir: con muchas entradas, pintarlas todas de entrada
+  // haría lenta la bitácora.
+  let escudoPintado = false;
+  detEscudo.addEventListener('toggle', function () {
+    if (detEscudo.open && !escudoPintado) {
+      try {
+        pintarEscudoEn(contEscudo, escudo);
+        escudoPintado = true;
+      } catch (err) {
+        contEscudo.textContent = 'No se pudo dibujar el escudo guardado.';
+        console.error('Escudo inválido en la consulta', consulta.id, err);
+      }
+    }
+  });
+
+  let casasPintadas = false;
+  detCasas.addEventListener('toggle', function () {
+    if (detCasas.open && !casasPintadas) {
+      try {
+        pintarCartaCasasEn(contCasas, consulta.casas, consulta.casa_tema);
+        casasPintadas = true;
+      } catch (err) {
+        contCasas.textContent = 'No se pudo dibujar la carta de casas guardada.';
+        console.error('Casas inválidas en la consulta', consulta.id, err);
+      }
+    }
+  });
+
+  return envoltorio;
 }
 
 /* Borrado de una entrada, con confirmación en dos pasos para no perder una
@@ -1939,6 +2148,9 @@ function inicializar() {
     mostrarPantalla('pantalla-inicio');
   });
 
+  document.getElementById('btn-exportar-md').addEventListener('click', exportarBitacoraMarkdown);
+  document.getElementById('btn-exportar-json').addEventListener('click', exportarBitacoraJson);
+
   document.getElementById('btn-cerrar-sesion').addEventListener('click', async function () {
     await cerrarSesion();
     mostrarPantalla('pantalla-inicio');
@@ -1992,8 +2204,19 @@ function inicializar() {
   document.getElementById('btn-nueva-consulta').addEventListener('click', function () { reiniciarConsulta(false); });
 }
 
+/* Service worker: hace que la app abra sin conexión y se pueda instalar en la
+   pantalla de inicio. Si falla, la app funciona igual. */
+function registrarServiceWorker() {
+  if (!('serviceWorker' in navigator)) return;
+  if (location.protocol !== 'https:' && location.hostname !== 'localhost') return;
+  navigator.serviceWorker.register('sw.js').catch(function (err) {
+    console.warn('No se pudo registrar el service worker:', err);
+  });
+}
+
 if (typeof document !== 'undefined') {
   document.addEventListener('DOMContentLoaded', inicializar);
+  window.addEventListener('load', registrarServiceWorker);
 
   // Los navegadores móviles restauran el valor del textarea al volver desde el
   // bfcache o al restaurar la sesión, aunque el estado JS se haya reiniciado.
