@@ -66,11 +66,10 @@
     <div class="contenedor centrado">
       <h2>Tu bitácora privada</h2>
       <p class="guia">
-        Entrá con tu email para guardar cada tirada y verificar después qué pasó
+        Entrá con tu cuenta para guardar cada tirada y verificar después qué pasó
         realmente. Es la forma de medir si el oráculo acierta.
       </p>
       <p class="explicacion">
-        Te llega un enlace de acceso por correo: no hay contraseña que recordar.
         Tus consultas son privadas — solo vos podés leerlas.
       </p>
 
@@ -78,23 +77,17 @@
 
       <label for="input-email">Tu email</label>
       <input type="email" id="input-email" placeholder="tunombre@ejemplo.com" autocomplete="email" spellcheck="false">
-      <p class="error" id="error-email" hidden>Escribí un email válido.</p>
-      <p class="aviso-enlace" id="aviso-enlace" hidden>
-        Te lo enviamos. Podés abrir el enlace del correo, o escribir acá abajo
-        el código de 6 dígitos que viene en el mismo mensaje.
-      </p>
+
+      <label for="input-password">Tu contraseña</label>
+      <input type="password" id="input-password" placeholder="Al menos 6 caracteres" autocomplete="current-password">
+
+      <p class="error" id="error-email" hidden></p>
 
       <div class="fila-botones">
         <button id="btn-volver-sesion" class="btn btn-secundario">Atrás</button>
-        <button id="btn-enviar-enlace" class="btn btn-primario">Enviarme el acceso</button>
+        <button id="btn-entrar" class="btn btn-primario">Entrar</button>
       </div>
-
-      <div class="bloque-codigo" id="bloque-codigo">
-        <label for="input-codigo">¿El enlace no funciona? Código de 6 dígitos</label>
-        <input type="text" id="input-codigo" placeholder="123456" inputmode="numeric"
-               autocomplete="one-time-code" maxlength="6" spellcheck="false">
-        <button id="btn-entrar-codigo" class="btn btn-secundario">Entrar con el código</button>
-      </div>
+      <button id="btn-crear-cuenta" class="btn-enlace">No tengo cuenta — crear una</button>
     </div>
   </section>
 
