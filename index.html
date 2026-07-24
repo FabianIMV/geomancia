@@ -131,23 +131,10 @@
     <div class="contenedor">
       <h2>Generar las 4 Madres</h2>
 
-      <div class="selector-modo" id="selector-modo">
-        <button class="btn-modo activo" data-modo="toque">Modo toque</button>
-        <button class="btn-modo" data-modo="automatico">Modo automático</button>
-      </div>
-
-      <div id="bloque-toque">
-        <p class="guia">
-          Toca la zona una cantidad espontánea de veces. Al acabar el tiempo, la paridad
-          del conteo traza la línea.
-        </p>
-        <p class="progreso" id="progreso-linea">Línea 1 de 16 — Madre 1</p>
-        <div id="zona-toque" class="zona-toque">
-          <span id="contador-toque">0</span>
-          <span class="etiqueta-toque">TOCA AQUÍ</span>
-        </div>
-        <div class="barra-tiempo"><div id="barra-tiempo-relleno" class="barra-tiempo-relleno"></div></div>
-      </div>
+      <p class="guia">
+        Se trazan 16 líneas de puntos y la paridad de cada hilera decide su valor,
+        como en la arena. El azar viene del generador criptográfico del sistema.
+      </p>
 
       <div id="madres-formandose" class="madres-formandose"></div>
     </div>
