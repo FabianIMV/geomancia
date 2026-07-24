@@ -23,7 +23,10 @@
         y el Juez de la geomancia clásica.
       </p>
       <button id="btn-comenzar" class="btn btn-primario">Comenzar consulta</button>
+      <button id="btn-bitacora" class="btn-enlace" hidden>Ver mi bitácora</button>
+      <button id="btn-sesion" class="btn-enlace" hidden>Entrar a mi bitácora</button>
       <button id="btn-config-api-key" class="btn-enlace">Configurar / cambiar la clave de la API</button>
+      <p class="estado-sesion" id="estado-sesion" hidden></p>
     </div>
   </section>
 
@@ -55,6 +58,47 @@
         <button id="btn-guardar-api-key" class="btn btn-primario">Guardar y continuar</button>
       </div>
       <button id="btn-borrar-api-key" class="btn-enlace btn-enlace-peligro" hidden>Borrar la clave guardada</button>
+    </div>
+  </section>
+
+  <!-- PANTALLA: ENTRAR A LA BITÁCORA -->
+  <section id="pantalla-sesion" class="pantalla">
+    <div class="contenedor centrado">
+      <h2>Tu bitácora privada</h2>
+      <p class="guia">
+        Entrá con tu email para guardar cada tirada y verificar después qué pasó
+        realmente. Es la forma de medir si el oráculo acierta.
+      </p>
+      <p class="explicacion">
+        Te llega un enlace de acceso por correo: no hay contraseña que recordar.
+        Tus consultas son privadas — solo vos podés leerlas.
+      </p>
+
+      <label for="input-email">Tu email</label>
+      <input type="email" id="input-email" placeholder="tunombre@ejemplo.com" autocomplete="email" spellcheck="false">
+      <p class="error" id="error-email" hidden>Escribí un email válido.</p>
+      <p class="aviso-enlace" id="aviso-enlace" hidden>
+        Te enviamos un enlace de acceso. Abrilo desde este mismo dispositivo.
+      </p>
+
+      <div class="fila-botones">
+        <button id="btn-volver-sesion" class="btn btn-secundario">Atrás</button>
+        <button id="btn-enviar-enlace" class="btn btn-primario">Enviarme el enlace</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANTALLA: BITÁCORA -->
+  <section id="pantalla-bitacora" class="pantalla">
+    <div class="contenedor">
+      <h2>Mi bitácora</h2>
+      <p class="estado-bitacora" id="estado-bitacora">Cargando…</p>
+      <div id="lista-bitacora" class="lista-bitacora"></div>
+
+      <div class="fila-botones fila-botones-final">
+        <button id="btn-volver-bitacora" class="btn btn-secundario">Atrás</button>
+        <button id="btn-cerrar-sesion" class="btn-enlace btn-enlace-peligro">Cerrar sesión</button>
+      </div>
     </div>
   </section>
 
@@ -148,11 +192,14 @@
         <button id="btn-nueva-consulta" class="btn btn-primario">Nueva consulta</button>
       </div>
       <p class="aviso-copiado" id="aviso-copiado" hidden>Copiado al portapapeles.</p>
+      <p class="aviso-guardado" id="aviso-guardado" hidden>Guardado en tu bitácora.</p>
     </div>
   </section>
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.58.0/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

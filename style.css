@@ -115,7 +115,7 @@ label {
   margin: 1rem 0 0.4rem;
 }
 
-textarea, select, input[type="text"] {
+textarea, select, input[type="text"], input[type="email"], input[type="password"] {
   width: 100%;
   background: var(--panel);
   border: 1px solid var(--panel-borde);
@@ -445,6 +445,123 @@ summary {
   color: var(--favorable);
   font-size: 0.88rem;
   margin-top: 0.6rem;
+}
+
+.aviso-guardado {
+  text-align: center;
+  color: var(--favorable);
+  font-size: 0.88rem;
+  margin-top: 0.6rem;
+}
+
+.aviso-enlace {
+  color: var(--favorable);
+  font-size: 0.92rem;
+  margin: 0.7rem 0 0;
+}
+
+.estado-sesion {
+  color: var(--arena-suave);
+  font-size: 0.82rem;
+  margin-top: 0.9rem;
+}
+
+/* --- Bitácora --- */
+
+.estado-bitacora {
+  color: var(--arena-suave);
+  font-size: 0.92rem;
+}
+
+.lista-bitacora {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin-top: 0.8rem;
+}
+
+.entrada-bitacora {
+  background: var(--panel);
+  border: 1px solid var(--panel-borde);
+  border-radius: var(--radio);
+  padding: 0.8rem 0.9rem;
+}
+
+.entrada-bitacora > summary {
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.entrada-pregunta { color: var(--arena); }
+
+.entrada-meta {
+  color: var(--arena-suave);
+  font-size: 0.8rem;
+}
+
+.marca-acierto {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  align-self: flex-start;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  margin-top: 0.2rem;
+}
+
+.marca-acierto.acerto { color: var(--favorable); }
+.marca-acierto.fallo { color: var(--desfavorable); }
+.marca-acierto.parcial,
+.marca-acierto.sin_verificar { color: var(--neutro); }
+
+.entrada-cuerpo {
+  margin-top: 0.85rem;
+  border-top: 1px solid var(--panel-borde);
+  padding-top: 0.85rem;
+}
+
+.entrada-tema {
+  color: var(--arena-suave);
+  font-size: 0.85rem;
+  margin: 0 0 0.7rem;
+}
+
+.verificacion {
+  margin-top: 1rem;
+  border-top: 1px solid var(--panel-borde);
+  padding-top: 0.9rem;
+}
+
+.verificacion h4 {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+  color: var(--ocre);
+}
+
+.fila-acierto {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.6rem 0 0.8rem;
+}
+
+.btn-acierto {
+  flex: 1;
+  background: transparent;
+  border: 1px solid var(--panel-borde);
+  color: var(--arena-suave);
+  border-radius: var(--radio);
+  padding: 0.5rem 0.3rem;
+  font-family: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.btn-acierto.activo {
+  border-color: var(--cobre);
+  color: var(--cobre-fuerte);
 }
 
 @media (min-width: 640px) {
