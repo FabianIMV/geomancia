@@ -378,6 +378,103 @@ summary {
   margin-top: 0.6rem;
 }
 
+/* Espera de la interpretación: una figura geomántica que va mutando */
+.interpretacion-cargando {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 1.6rem 0;
+}
+
+.figura-cargando {
+  display: flex;
+  flex-direction: column;
+  gap: 0.42rem;
+  align-items: center;
+  min-height: 62px;
+  justify-content: center;
+}
+.figura-cargando .figura-linea { gap: 0.42rem; }
+.figura-cargando .punto {
+  width: 11px;
+  height: 11px;
+  background: var(--cobre-fuerte);
+  animation: latido 1.6s ease-in-out infinite;
+}
+
+@keyframes latido {
+  0%, 100% { opacity: 0.35; transform: scale(0.85); }
+  50%      { opacity: 1;    transform: scale(1); }
+}
+
+.texto-cargando {
+  color: var(--arena-suave);
+  font-size: 0.92rem;
+  font-style: italic;
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .figura-cargando .punto { animation: none; opacity: 1; }
+}
+
+/* Guardar la lectura en la bitácora */
+.bloque-guardado {
+  margin-top: 1.2rem;
+  border-top: 1px solid var(--panel-borde);
+  padding-top: 1rem;
+}
+
+.btn-quitar {
+  border-color: var(--desfavorable);
+  color: var(--desfavorable);
+}
+
+.zona-borrado {
+  margin-top: 1rem;
+  border-top: 1px solid var(--panel-borde);
+  padding-top: 0.5rem;
+}
+
+.confirmar-borrado .fila-botones { margin-top: 0.6rem; }
+
+/* Títulos y listas dentro de la interpretación renderizada */
+.interpretacion-texto h4 {
+  font-size: 1rem;
+  color: var(--cobre-fuerte);
+  margin: 1.2rem 0 0.5rem;
+}
+.interpretacion-texto h5 {
+  font-size: 0.92rem;
+  color: var(--ocre);
+  margin: 1rem 0 0.4rem;
+}
+.interpretacion-texto ul,
+.interpretacion-texto ol {
+  margin: 0 0 0.85rem;
+  padding-left: 1.3rem;
+}
+.interpretacion-texto li { margin-bottom: 0.3rem; }
+.interpretacion-texto em { color: var(--arena); }
+.interpretacion-texto code {
+  background: var(--negro-suave);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+.interpretacion-texto blockquote {
+  margin: 0 0 0.85rem;
+  padding-left: 0.8rem;
+  border-left: 2px solid var(--panel-borde);
+  color: var(--arena-suave);
+}
+.interpretacion-texto hr {
+  border: none;
+  border-top: 1px solid var(--panel-borde);
+  margin: 1.2rem 0;
+}
+
 .estado-sesion {
   color: var(--arena-suave);
   font-size: 0.82rem;

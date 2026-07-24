@@ -207,6 +207,13 @@ async function listarConsultas() {
   return data || [];
 }
 
+async function borrarConsulta(id) {
+  const cliente = iniciarSupabase();
+  if (!cliente || !usuarioActual) throw new Error('No hay sesión abierta.');
+  const { error } = await cliente.from('consultas').delete().eq('id', id);
+  if (error) throw new Error(error.message);
+}
+
 async function guardarVerificacion(id, resultadoReal, acierto) {
   const cliente = iniciarSupabase();
   if (!cliente || !usuarioActual) throw new Error('No hay sesión abierta.');
@@ -548,6 +555,7 @@ const estado = {
   puntosPorLinea: [], // cuántos puntos se trazaron en cada línea (su paridad da el valor)
   escudo: null,
   interpretacion: '',
+  idConsultaGuardada: null, // id en la bitácora, si el consultante decidió guardarla
   fecha: null,
   // true cuando la pregunta ya se usó en una tirada: al volver a la pantalla de
   // pregunta se limpia el textarea en vez de arrastrar la consulta anterior.
@@ -1025,24 +1033,132 @@ function figurasAlucinadas(texto, escudo) {
 
 const MAX_INTENTOS_INTERPRETACION = 3; // 1 intento + 2 reintentos
 
+/* Animación de espera: en vez de un texto fijo, se dibuja una figura geomántica
+   que va mutando entre las 16, como si el oráculo estuviera tanteando. */
+let animacionOraculo = null;
+
+function arrancarAnimacionOraculo() {
+  const cont = document.getElementById('figura-cargando');
+  if (!cont) return;
+  detenerAnimacionOraculo();
+
+  const filas = [];
+  cont.innerHTML = '';
+  for (let i = 0; i < 4; i++) {
+    const fila = document.createElement('div');
+    fila.className = 'figura-linea';
+    cont.appendChild(fila);
+    filas.push(fila);
+  }
+
+  const pintar = function (puntos) {
+    puntos.forEach(function (n, i) {
+      const fila = filas[i];
+      fila.innerHTML = '';
+      for (let p = 0; p < n; p++) {
+        const punto = document.createElement('span');
+        punto.className = 'punto';
+        fila.appendChild(punto);
+      }
+    });
+  };
+
+  let indice = Math.floor(Math.random() * FIGURAS.length);
+  pintar(FIGURAS[indice].puntos);
+  animacionOraculo = setInterval(function () {
+    indice = (indice + 1 + Math.floor(Math.random() * 5)) % FIGURAS.length;
+    pintar(FIGURAS[indice].puntos);
+  }, 420);
+}
+
+function detenerAnimacionOraculo() {
+  if (animacionOraculo) {
+    clearInterval(animacionOraculo);
+    animacionOraculo = null;
+  }
+}
+
+function mostrarCargando(mostrar, mensaje) {
+  const bloque = document.getElementById('interpretacion-cargando');
+  const texto = document.getElementById('texto-cargando');
+  if (!bloque) return;
+  bloque.hidden = !mostrar;
+  if (mostrar) {
+    if (texto && mensaje) texto.textContent = mensaje;
+    arrancarAnimacionOraculo();
+  } else {
+    detenerAnimacionOraculo();
+  }
+}
+
+/* Ofrece guardar la lectura si hay sesión e interpretación válida. */
+function actualizarOfertaDeGuardado() {
+  const bloque = document.getElementById('bloque-guardado');
+  const boton = document.getElementById('btn-guardar-bitacora');
+  const aviso = document.getElementById('aviso-guardado');
+  if (!bloque || !boton) return;
+
+  const puede = !!(usuarioActual && estado.interpretacion);
+  bloque.hidden = !puede;
+  if (!puede) return;
+
+  if (estado.idConsultaGuardada) {
+    boton.textContent = 'Quitar de mi bitácora';
+    boton.classList.add('btn-quitar');
+    if (aviso) { aviso.textContent = 'Guardado en tu bitácora.'; aviso.hidden = false; }
+  } else {
+    boton.textContent = 'Guardar en mi bitácora';
+    boton.classList.remove('btn-quitar');
+    if (aviso) aviso.hidden = true;
+  }
+  boton.disabled = false;
+}
+
+async function alternarGuardadoDeConsulta() {
+  const boton = document.getElementById('btn-guardar-bitacora');
+  const aviso = document.getElementById('aviso-guardado');
+  boton.disabled = true;
+
+  try {
+    if (estado.idConsultaGuardada) {
+      await borrarConsulta(estado.idConsultaGuardada);
+      estado.idConsultaGuardada = null;
+    } else {
+      const id = await guardarConsultaEnBitacora();
+      if (!id) throw new Error('No se pudo guardar.');
+      estado.idConsultaGuardada = id;
+    }
+    actualizarOfertaDeGuardado();
+  } catch (err) {
+    console.error('Fallo al guardar o quitar la consulta:', err);
+    if (aviso) {
+      aviso.textContent = 'No se pudo completar: ' + err.message;
+      aviso.hidden = false;
+    }
+    boton.disabled = false;
+  }
+}
+
 async function solicitarInterpretacion() {
   const estadoEl = document.getElementById('interpretacion-estado');
   const textoEl = document.getElementById('interpretacion-texto');
   const reintentarBtn = document.getElementById('btn-reintentar');
 
-  estadoEl.hidden = false;
+  estadoEl.hidden = true;
   textoEl.innerHTML = '';
   reintentarBtn.hidden = true;
   estado.interpretacion = '';
+  estado.idConsultaGuardada = null;
+  actualizarOfertaDeGuardado();
 
   const promptBase = construirPrompt();
   let notaCorrectiva = '';
   let ultimoError = null;
 
   for (let intento = 1; intento <= MAX_INTENTOS_INTERPRETACION; intento++) {
-    estadoEl.textContent = intento === 1
+    mostrarCargando(true, intento === 1
       ? 'Consultando al oráculo…'
-      : 'Reintentando la consulta (intento ' + intento + ' de ' + MAX_INTENTOS_INTERPRETACION + ')…';
+      : 'Reintentando (intento ' + intento + ' de ' + MAX_INTENTOS_INTERPRETACION + ')…');
     try {
       const texto = (await llamarGemini(promptBase + notaCorrectiva)).trim();
       if (!texto) {
@@ -1055,17 +1171,11 @@ async function solicitarInterpretacion() {
         throw new Error('La interpretación menciona figuras que no están en el escudo: ' + alucinadas.join(', '));
       }
       estado.interpretacion = texto;
+      mostrarCargando(false);
       estadoEl.hidden = true;
       textoEl.innerHTML = renderizarMarkdownBasico(texto);
-      // Solo se guardan tiradas con interpretación válida del modelo.
-      guardarConsultaEnBitacora().then(function (id) {
-        if (!id) return;
-        const avisoGuardado = document.getElementById('aviso-guardado');
-        if (avisoGuardado) {
-          avisoGuardado.hidden = false;
-          setTimeout(function () { avisoGuardado.hidden = true; }, 2500);
-        }
-      });
+      // El guardado es decisión del consultante: se ofrece, no se hace solo.
+      actualizarOfertaDeGuardado();
       return;
     } catch (err) {
       console.error('Intento ' + intento + ' de interpretación fallido:', err);
@@ -1076,6 +1186,8 @@ async function solicitarInterpretacion() {
   // Todos los intentos fallaron: NO se genera lectura de respaldo. Se muestra el
   // error y se deja reintentar. La interpretación queda vacía y no se exporta como válida.
   estado.interpretacion = '';
+  mostrarCargando(false);
+  actualizarOfertaDeGuardado();
   estadoEl.hidden = false;
   estadoEl.textContent = 'No se pudo obtener la interpretación del oráculo tras ' +
     MAX_INTENTOS_INTERPRETACION + ' intentos. Revisá tu conexión o tu clave y reintentá.' +
@@ -1084,15 +1196,106 @@ async function solicitarInterpretacion() {
   reintentarBtn.hidden = false;
 }
 
+/* Marcas dentro de una línea: negritas, cursivas y código. Las negritas se
+   resuelven antes que las cursivas para que ** no se confunda con *. */
+function renderizarInline(texto) {
+  return texto
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[^*\w])\*([^*\n]+)\*(?![*\w])/g, '$1<em>$2</em>')
+    .replace(/(^|[^_\w])_([^_\n]+)_(?![_\w])/g, '$1<em>$2</em>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>');
+}
+
+/* Renderiza el Markdown que devuelve el modelo. Antes solo entendía negritas,
+   así que los títulos (###) y las reglas (---) salían literales en pantalla. */
 function renderizarMarkdownBasico(texto) {
-  const escapado = texto
+  const escapado = String(texto || '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
-  const parrafos = escapado.split(/\n\s*\n/).map(function (p) {
-    return p.trim().replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  }).filter(Boolean);
-  return parrafos.map(function (p) { return '<p>' + p.replace(/\n/g, '<br>') + '</p>'; }).join('');
+
+  const salida = [];
+  let listaAbierta = null;   // 'ul' | 'ol' | null
+  let parrafo = [];
+
+  function cerrarParrafo() {
+    if (!parrafo.length) return;
+    salida.push('<p>' + renderizarInline(parrafo.join('<br>')) + '</p>');
+    parrafo = [];
+  }
+  function cerrarLista() {
+    if (!listaAbierta) return;
+    salida.push('</' + listaAbierta + '>');
+    listaAbierta = null;
+  }
+  function abrirLista(tipo) {
+    if (listaAbierta === tipo) return;
+    cerrarLista();
+    salida.push('<' + tipo + '>');
+    listaAbierta = tipo;
+  }
+
+  escapado.split('\n').forEach(function (crudo) {
+    const linea = crudo.trim();
+
+    if (!linea) {
+      cerrarParrafo();
+      cerrarLista();
+      return;
+    }
+
+    // Regla horizontal: --- *** ___
+    if (/^([-*_])\1{2,}$/.test(linea)) {
+      cerrarParrafo();
+      cerrarLista();
+      salida.push('<hr>');
+      return;
+    }
+
+    // Títulos: # a ######. Se mapean a h4/h5 para no competir con los de la app.
+    const titulo = linea.match(/^(#{1,6})\s+(.*)$/);
+    if (titulo) {
+      cerrarParrafo();
+      cerrarLista();
+      const nivel = titulo[1].length <= 3 ? 4 : 5;
+      salida.push('<h' + nivel + '>' + renderizarInline(titulo[2]) + '</h' + nivel + '>');
+      return;
+    }
+
+    // Cita
+    const cita = linea.match(/^&gt;\s?(.*)$/);
+    if (cita) {
+      cerrarParrafo();
+      cerrarLista();
+      salida.push('<blockquote>' + renderizarInline(cita[1]) + '</blockquote>');
+      return;
+    }
+
+    // Lista con viñetas: "- algo" o "* algo" (no confundir con *cursiva*)
+    const vineta = linea.match(/^[-*+]\s+(.*)$/);
+    if (vineta) {
+      cerrarParrafo();
+      abrirLista('ul');
+      salida.push('<li>' + renderizarInline(vineta[1]) + '</li>');
+      return;
+    }
+
+    // Lista numerada: "1. algo"
+    const numerada = linea.match(/^\d+[.)]\s+(.*)$/);
+    if (numerada) {
+      cerrarParrafo();
+      abrirLista('ol');
+      salida.push('<li>' + renderizarInline(numerada[1]) + '</li>');
+      return;
+    }
+
+    cerrarLista();
+    parrafo.push(linea);
+  });
+
+  cerrarParrafo();
+  cerrarLista();
+  return salida.join('');
 }
 
 /* ==========================================================================
@@ -1155,38 +1358,20 @@ function construirMarkdownExport() {
    sin símbolos de Markdown para las apps que no aceptan texto enriquecido. */
 
 function markdownAHtmlExport(md) {
-  const escapado = md
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-  const conNegritas = function (s) { return s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>'); };
-
-  const out = [];
-  let enLista = false;
-  escapado.split('\n').forEach(function (linea) {
-    const l = linea.trim();
-    if (l.indexOf('- ') === 0) {
-      if (!enLista) { out.push('<ul>'); enLista = true; }
-      out.push('<li>' + conNegritas(l.slice(2)) + '</li>');
-      return;
-    }
-    if (enLista) { out.push('</ul>'); enLista = false; }
-    if (!l) return;
-    if (l.indexOf('## ') === 0) { out.push('<h2>' + conNegritas(l.slice(3)) + '</h2>'); return; }
-    if (l.indexOf('# ') === 0) { out.push('<h1>' + conNegritas(l.slice(2)) + '</h1>'); return; }
-    if (l.indexOf('&gt; ') === 0) { out.push('<blockquote>' + conNegritas(l.slice(5)) + '</blockquote>'); return; }
-    out.push('<p>' + conNegritas(l) + '</p>');
-  });
-  if (enLista) out.push('</ul>');
-  return out.join('\n');
+  // Se reutiliza el mismo renderizador que la pantalla, para que lo copiado
+  // salga con el formato que se ve (títulos incluidos).
+  return renderizarMarkdownBasico(md);
 }
 
 function markdownATextoPlano(md) {
   return md
-    .replace(/^#{1,6}\s*/gm, '')
-    .replace(/^>\s*/gm, '')
-    .replace(/^- /gm, '• ')
-    .replace(/\*\*(.+?)\*\*/g, '$1');
+    .replace(/^\s*([-*_])\1{2,}\s*$/gm, '')      // reglas horizontales
+    .replace(/^#{1,6}\s*/gm, '')                   // títulos
+    .replace(/^>\s*/gm, '')                        // citas
+    .replace(/^[-*+] /gm, '• ')                    // viñetas
+    .replace(/\*\*(.+?)\*\*/g, '$1')              // negritas
+    .replace(/(^|[^*\w])\*([^*\n]+)\*(?![*\w])/g, '$1$2')  // cursivas
+    .replace(/`([^`]+)`/g, '$1');                  // código
 }
 
 async function copiarLectura() {
@@ -1542,8 +1727,83 @@ function crearTarjetaBitacora(consulta) {
   cuerpo.appendChild(interp);
 
   cuerpo.appendChild(crearFormularioVerificacion(consulta));
+  cuerpo.appendChild(crearBorradoDeEntrada(consulta, item));
   item.appendChild(cuerpo);
   return item;
+}
+
+/* Borrado de una entrada, con confirmación en dos pasos para no perder una
+   lectura por un toque accidental en el celular. */
+function crearBorradoDeEntrada(consulta, item) {
+  const zona = document.createElement('div');
+  zona.className = 'zona-borrado';
+
+  const boton = document.createElement('button');
+  boton.type = 'button';
+  boton.className = 'btn-enlace btn-enlace-peligro';
+  boton.textContent = 'Eliminar esta consulta';
+
+  const confirmar = document.createElement('div');
+  confirmar.className = 'confirmar-borrado';
+  confirmar.hidden = true;
+
+  const pregunta = document.createElement('p');
+  pregunta.className = 'entrada-tema';
+  pregunta.textContent = '¿Eliminar esta consulta de tu bitácora? No se puede deshacer.';
+  confirmar.appendChild(pregunta);
+
+  const fila = document.createElement('div');
+  fila.className = 'fila-botones';
+
+  const cancelar = document.createElement('button');
+  cancelar.type = 'button';
+  cancelar.className = 'btn btn-secundario';
+  cancelar.textContent = 'Cancelar';
+  cancelar.addEventListener('click', function () {
+    confirmar.hidden = true;
+    boton.hidden = false;
+  });
+
+  const eliminar = document.createElement('button');
+  eliminar.type = 'button';
+  eliminar.className = 'btn btn-secundario btn-quitar';
+  eliminar.textContent = 'Sí, eliminar';
+  eliminar.addEventListener('click', async function () {
+    eliminar.disabled = true;
+    eliminar.textContent = 'Eliminando…';
+    try {
+      await borrarConsulta(consulta.id);
+      if (estado.idConsultaGuardada === consulta.id) {
+        estado.idConsultaGuardada = null;
+        actualizarOfertaDeGuardado();
+      }
+      item.remove();
+      const lista = document.getElementById('lista-bitacora');
+      if (lista && !lista.children.length) {
+        const estadoEl = document.getElementById('estado-bitacora');
+        estadoEl.textContent = 'Todavía no hay consultas guardadas.';
+        estadoEl.hidden = false;
+      }
+    } catch (err) {
+      console.error('No se pudo eliminar la consulta:', err);
+      pregunta.textContent = 'No se pudo eliminar: ' + err.message;
+      eliminar.disabled = false;
+      eliminar.textContent = 'Sí, eliminar';
+    }
+  });
+
+  fila.appendChild(cancelar);
+  fila.appendChild(eliminar);
+  confirmar.appendChild(fila);
+
+  boton.addEventListener('click', function () {
+    boton.hidden = true;
+    confirmar.hidden = false;
+  });
+
+  zona.appendChild(boton);
+  zona.appendChild(confirmar);
+  return zona;
 }
 
 function crearFormularioVerificacion(consulta) {
@@ -1638,7 +1898,9 @@ function reiniciarConsulta(mantenerPregunta) {
   estado.lineas = [];
   estado.escudo = null;
   estado.interpretacion = '';
+  estado.idConsultaGuardada = null;
   estado.fecha = null;
+  detenerAnimacionOraculo();
   document.getElementById('barra-calculo-relleno').style.width = '0%';
   mostrarPantalla('pantalla-inicio');
 }
@@ -1726,6 +1988,7 @@ function inicializar() {
   document.getElementById('btn-reintentar').addEventListener('click', solicitarInterpretacion);
   document.getElementById('btn-nueva-interpretacion').addEventListener('click', solicitarInterpretacion);
   document.getElementById('btn-copiar-md').addEventListener('click', copiarLectura);
+  document.getElementById('btn-guardar-bitacora').addEventListener('click', alternarGuardadoDeConsulta);
   document.getElementById('btn-nueva-consulta').addEventListener('click', function () { reiniciarConsulta(false); });
 }
 
