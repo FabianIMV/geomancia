@@ -366,6 +366,9 @@ const estado = {
   escudo: null,
   interpretacion: '',
   fecha: null,
+  // true cuando la pregunta ya se usó en una tirada: al volver a la pantalla de
+  // pregunta se limpia el textarea en vez de arrastrar la consulta anterior.
+  preguntaConsumida: false,
 };
 
 /* ==========================================================================
@@ -1064,6 +1067,16 @@ function guardarApiKeyDesdeFormulario() {
   }
   errorEl.hidden = true;
   setApiKey(valor);
+  salirDePantallaClave();
+}
+
+// Sale de la pantalla de clave hacia su destino, respetando el limpiado del
+// textarea cuando ese destino es la pantalla de pregunta.
+function salirDePantallaClave() {
+  if (pantallaSiguienteTrasClave === 'pantalla-pregunta') {
+    irAPantallaPregunta();
+    return;
+  }
   mostrarPantalla(pantallaSiguienteTrasClave);
 }
 
@@ -1071,9 +1084,23 @@ function guardarApiKeyDesdeFormulario() {
    REINICIO DE CONSULTA
    ========================================================================== */
 
+/* Entra a la pantalla de pregunta limpiando el textarea si la pregunta anterior
+   ya se usó en una tirada. Si el usuario solo fue y volvió sin consultar, se
+   conserva lo que estaba escribiendo. */
+function irAPantallaPregunta() {
+  if (estado.preguntaConsumida) {
+    estado.pregunta = '';
+    estado.preguntaConsumida = false;
+    document.getElementById('input-pregunta').value = '';
+  }
+  document.getElementById('error-pregunta').hidden = true;
+  mostrarPantalla('pantalla-pregunta');
+}
+
 function reiniciarConsulta(mantenerPregunta) {
   if (!mantenerPregunta) {
     estado.pregunta = '';
+    estado.preguntaConsumida = false;
     document.getElementById('input-pregunta').value = '';
   }
   estado.lineas = [];
@@ -1096,7 +1123,7 @@ function inicializar() {
       abrirPantallaClave('pantalla-pregunta');
       return;
     }
-    mostrarPantalla('pantalla-pregunta');
+    irAPantallaPregunta();
   });
 
   document.getElementById('btn-config-api-key').addEventListener('click', function () {
@@ -1105,9 +1132,7 @@ function inicializar() {
 
   document.getElementById('btn-guardar-api-key').addEventListener('click', guardarApiKeyDesdeFormulario);
 
-  document.getElementById('btn-cancelar-api-key').addEventListener('click', function () {
-    mostrarPantalla(pantallaSiguienteTrasClave);
-  });
+  document.getElementById('btn-cancelar-api-key').addEventListener('click', salirDePantallaClave);
 
   document.getElementById('btn-borrar-api-key').addEventListener('click', function () {
     borrarApiKey();
@@ -1127,6 +1152,7 @@ function inicializar() {
     }
     errorEl.hidden = true;
     estado.pregunta = texto;
+    estado.preguntaConsumida = true;
     const temaId = document.getElementById('select-tema').value;
     estado.tema = TEMAS.find(function (t) { return t.id === temaId; }) || TEMAS[TEMAS.length - 1];
     mostrarPantalla('pantalla-generacion');
@@ -1153,6 +1179,14 @@ function inicializar() {
 
 if (typeof document !== 'undefined') {
   document.addEventListener('DOMContentLoaded', inicializar);
+
+  // Los navegadores móviles restauran el valor del textarea al volver desde el
+  // bfcache o al restaurar la sesión, aunque el estado JS se haya reiniciado.
+  // Si no hay una consulta en curso, se limpia para no arrastrar la pregunta anterior.
+  window.addEventListener('pageshow', function () {
+    const input = document.getElementById('input-pregunta');
+    if (input && !estado.pregunta) input.value = '';
+  });
 }
 
 /* ==========================================================================
