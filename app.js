@@ -365,7 +365,6 @@ const estado = {
   lineas: [],       // 16 valores (1|2), en orden de generación
   escudo: null,
   interpretacion: '',
-  interpretacionEsRespaldo: false,
   fecha: null,
 };
 
@@ -844,74 +843,6 @@ function figurasAlucinadas(texto, escudo) {
     .map(function (f) { return f.nombre; });
 }
 
-const MARCA_RESPALDO = '⚠ **LECTURA DE RESPALDO — sin interpretación del modelo**';
-
-// Detecta preguntas que piden "cuándo" / un plazo, para avisar que este sistema
-// no calcula timing en vez de omitirlo en silencio.
-function preguntaTieneComponenteTemporal(pregunta) {
-  return /\b(cu[aá]ndo|cu[aá]nto tiempo|cu[aá]ntos d[ií]as|cu[aá]ntas semanas|cu[aá]ntos meses|cu[aá]ntos a[nñ]os|para cu[aá]ndo|en cu[aá]nto|qu[eé] d[ií]a|qu[eé] fecha|plazo|tardar[eé]|tardar[aá]|demorar[aá]|cu[aá]nto falta)\b/i.test(pregunta || '');
-}
-
-function generarRespaldoLocal() {
-  const e = estado.escudo;
-  const juez = figuraPorPuntos(e.juez);
-  const testigoD = figuraPorPuntos(e.testigoDerecho);
-  const testigoI = figuraPorPuntos(e.testigoIzquierdo);
-  const reconciliador = figuraPorPuntos(e.reconciliador);
-  const casaRelevante = estado.tema.casa;
-  const nat = function (f) { return f.naturaleza.replace('-', ' '); };
-
-  let texto = '';
-
-  if (preguntaTieneComponenteTemporal(estado.pregunta)) {
-    texto += '**Nota sobre el tiempo:** la pregunta pide *cuándo* ocurrirá algo. ' +
-      'Este oráculo no calcula fechas ni plazos: juzga la tendencia y la condición del asunto, ' +
-      'no su timing. El veredicto habla de hacia dónde se inclina el asunto, no de cuándo.\n\n';
-  }
-
-  texto += '**Veredicto del Juez: ' + juez.nombre + ' (' + juez.traduccion + ')**\n\n';
-  texto += 'Naturaleza ' + nat(juez) + '. ' + juez.significado + '\n\n';
-  texto += '**Camino de los Testigos**\n\n';
-  texto += 'Testigo Derecho: ' + testigoD.nombre + ' (' + nat(testigoD) + '). ' + testigoD.significado + '\n\n';
-  texto += 'Testigo Izquierdo: ' + testigoI.nombre + ' (' + nat(testigoI) + '). ' + testigoI.significado + '\n\n';
-
-  if (casaRelevante) {
-    const figuraCasa = figuraPorPuntos(e.casas[casaRelevante - 1]);
-    texto += '**Casa ' + casaRelevante + ' (' + estado.tema.etiqueta + ')**\n\n';
-    texto += figuraCasa.nombre + ' (' + nat(figuraCasa) + '). ' + figuraCasa.significado + '\n\n';
-  }
-
-  // Casa 4 (final del asunto) y Casa 11 (frutos / esperanzas), salvo que ya sean la casa del tema.
-  if (casaRelevante !== 4) {
-    const figuraCasa4 = figuraPorPuntos(e.casas[3]);
-    texto += '**Casa 4 (final del asunto)**\n\n';
-    texto += figuraCasa4.nombre + ' (' + nat(figuraCasa4) + '). ' + figuraCasa4.significado + '\n\n';
-  }
-  if (casaRelevante !== 11) {
-    const figuraCasa11 = figuraPorPuntos(e.casas[10]);
-    texto += '**Casa 11 (frutos y esperanzas)**\n\n';
-    texto += figuraCasa11.nombre + ' (' + nat(figuraCasa11) + '). ' + figuraCasa11.significado + '\n\n';
-  }
-
-  texto += '**Reconciliador**\n\n';
-  texto += reconciliador.nombre + ' (' + nat(reconciliador) + '). ' + reconciliador.significado +
-    ' Matiza cómo el desenlace del asunto repercute sobre el consultante.\n\n';
-
-  texto += '**Síntesis**\n\n';
-  let sintesis = 'El Juez **' + juez.nombre + '**, de naturaleza ' + nat(juez) +
-    ', sentencia el asunto: ' + juez.significado;
-  if (casaRelevante) {
-    const figuraCasa = figuraPorPuntos(e.casas[casaRelevante - 1]);
-    sintesis += ' En la casa ' + casaRelevante + ' (' + estado.tema.etiqueta + ') aparece **' +
-      figuraCasa.nombre + '** (' + nat(figuraCasa) + '), que matiza ese veredicto en el terreno preguntado.';
-  }
-  sintesis += ' El Reconciliador **' + reconciliador.nombre + '** (' + nat(reconciliador) +
-    ') cierra indicando cómo eso repercute sobre el consultante.';
-  texto += sintesis;
-
-  return texto;
-}
-
 const MAX_INTENTOS_INTERPRETACION = 3; // 1 intento + 2 reintentos
 
 async function solicitarInterpretacion() {
@@ -923,7 +854,6 @@ async function solicitarInterpretacion() {
   textoEl.innerHTML = '';
   reintentarBtn.hidden = true;
   estado.interpretacion = '';
-  estado.interpretacionEsRespaldo = false;
 
   const promptBase = construirPrompt();
   let notaCorrectiva = '';
@@ -945,7 +875,6 @@ async function solicitarInterpretacion() {
         throw new Error('La interpretación menciona figuras que no están en el escudo: ' + alucinadas.join(', '));
       }
       estado.interpretacion = texto;
-      estado.interpretacionEsRespaldo = false;
       estadoEl.hidden = true;
       textoEl.innerHTML = renderizarMarkdownBasico(texto);
       return;
@@ -955,14 +884,14 @@ async function solicitarInterpretacion() {
     }
   }
 
-  // Todos los intentos fallaron: respaldo local, marcado visiblemente al inicio.
-  estado.interpretacionEsRespaldo = true;
-  estado.interpretacion = MARCA_RESPALDO + '\n\n' + generarRespaldoLocal();
+  // Todos los intentos fallaron: NO se genera lectura de respaldo. Se muestra el
+  // error y se deja reintentar. La interpretación queda vacía y no se exporta como válida.
+  estado.interpretacion = '';
   estadoEl.hidden = false;
   estadoEl.textContent = 'No se pudo obtener la interpretación del oráculo tras ' +
-    MAX_INTENTOS_INTERPRETACION + ' intentos. Mostrando lectura estructural de respaldo.' +
+    MAX_INTENTOS_INTERPRETACION + ' intentos. Revisá tu conexión o tu clave y reintentá.' +
     (ultimoError ? ' Último error: ' + ultimoError.message : '');
-  textoEl.innerHTML = renderizarMarkdownBasico(estado.interpretacion);
+  textoEl.innerHTML = '';
   reintentarBtn.hidden = false;
 }
 
@@ -992,10 +921,6 @@ function construirMarkdownExport() {
   const lineas = [];
   lineas.push('# Consulta de geomancia');
   lineas.push('');
-  if (estado.interpretacionEsRespaldo) {
-    lineas.push('> ' + MARCA_RESPALDO);
-    lineas.push('');
-  }
   lineas.push('**Fecha:** ' + fechaTexto);
   lineas.push('**Pregunta:** ' + estado.pregunta);
   lineas.push('**Tema:** ' + estado.tema.etiqueta + (estado.tema.casa ? ' (casa ' + estado.tema.casa + ')' : ''));
@@ -1154,7 +1079,6 @@ function reiniciarConsulta(mantenerPregunta) {
   estado.lineas = [];
   estado.escudo = null;
   estado.interpretacion = '';
-  estado.interpretacionEsRespaldo = false;
   estado.fecha = null;
   document.getElementById('barra-calculo-relleno').style.width = '0%';
   mostrarPantalla('pantalla-inicio');
