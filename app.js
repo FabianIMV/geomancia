@@ -336,8 +336,8 @@ function calcularEscudo(madres) {
   const totalPuntosJuez = juez.reduce(function (a, b) { return a + b; }, 0);
   if (totalPuntosJuez % 2 !== 0) {
     // El Juez debe tener siempre un total de puntos par. Si esto se dispara,
-    // hay un error en la aritmética del escudo.
-    console.error('Verificación de escudo fallida: el Juez tiene un total de puntos impar (' + totalPuntosJuez + ').');
+    // hay un error en la aritmética del escudo y no se debe continuar la tirada.
+    throw new Error('Verificación de escudo fallida: el Juez tiene un total de puntos impar (' + totalPuntosJuez + '). La aritmética del escudo es inconsistente.');
   }
 
   const casas = madres.concat(hijas, sobrinas);
@@ -365,6 +365,7 @@ const estado = {
   lineas: [],       // 16 valores (1|2), en orden de generación
   escudo: null,
   interpretacion: '',
+  interpretacionEsRespaldo: false,
   fecha: null,
 };
 
@@ -653,13 +654,17 @@ function renderizarCartaCasas() {
 const INSTRUCCIONES_SISTEMA =
   'Eres un geomante hermético clásico, riguroso y honesto. Reglas estrictas:\n' +
   '1. La geomancia es un oráculo de VEREDICTO sobre asuntos externos y concretos. Tu trabajo es juzgar, no consolar. Si el Juez es desfavorable (Amissio en pregunta de ganancia, Carcer, Rubeus, Cauda Draconis, Tristitia según contexto), dilo sin rodeos y explica qué indica.\n' +
-  '2. Jerarquía de lectura: (a) el JUEZ como sentencia general del asunto, (b) los dos Testigos como el camino hacia esa sentencia (Testigo Derecho = el consultante/el pasado del asunto, Testigo Izquierdo = el otro/el desenlace), (c) la figura en la CASA RELEVANTE al tema preguntado, (d) la figura en casa 1 como estado del consultante, (e) casa 4 como final del asunto si aporta.\n' +
+  '2. Jerarquía de lectura: (a) el JUEZ como sentencia general del asunto, (b) los dos Testigos como el camino hacia esa sentencia (Testigo Derecho = el consultante/el pasado del asunto, Testigo Izquierdo = el otro/el desenlace), (c) la figura en la CASA RELEVANTE al tema preguntado, (d) la figura en casa 1 como estado del consultante, (e) el RECONCILIADOR como matiz de cómo el desenlace afecta al consultante, (f) casa 4 como final del asunto si aporta.\n' +
   '3. Considera la naturaleza de cada figura EN CONTEXTO: Amissio es mala para retener pero buena para soltar deudas o enfermedades; Fortuna Minor favorece lo rápido, Fortuna Major lo lento; Puer y Rubeus advierten impulsividad; Populus refleja, no decide.\n' +
-  '4. Responde la pregunta concreta que se hizo. La geomancia contesta \'¿resultará X?\' con sí matizado, no matizado, o sí/no condicionado — comprométete con un veredicto y su condición.\n' +
+  '4. Responde la pregunta concreta que se hizo. La geomancia contesta \'¿resultará X?\' con sí matizado, no matizado, o sí/no condicionado. Comprométete con un veredicto (sí matizado / no matizado / condicionado) y su condición, pero NO uses lenguaje de garantía ni certeza sobre eventos futuros: evita \'garantiza\', \'asegura\', \'está garantizado\', \'altamente probable\'. La geomancia juzga la tendencia y la condición del asunto, no certifica resultados.\n' +
   '5. Si la pregunta es sobre un tercero o busca certeza absoluta sobre el futuro, da el veredicto simbólico pero reencuadra el consejo hacia lo que el consultante puede hacer u observar.\n' +
-  '6. Español claro y legible, denso pero no enredado. Usa **negritas** en lo clave. Sin relleno místico decorativo. Estructura: Veredicto del Juez → camino (Testigos) → detalle de la casa del tema → condición o consejo accionable → síntesis en una frase.\n' +
+  '6. Español claro y legible, denso pero no enredado. Usa **negritas** en lo clave. Sin relleno místico decorativo. Estructura: Veredicto del Juez → camino (Testigos) → detalle de la casa del tema → estado del consultante (casa 1) → Reconciliador → condición o consejo accionable → síntesis en una frase.\n' +
   '7. Si la pregunta involucra daño a terceros, salud grave o decisiones legales/financieras mayores, da el veredicto simbólico pero recuerda que esto no sustituye consejo profesional.\n' +
-  '8. Responde EXCLUSIVAMENTE en español.';
+  '8. COBERTURA OBLIGATORIA: antes de la síntesis final cubre explícitamente el Juez, AMBOS Testigos, la figura de la casa del tema, la figura de casa 1 y el Reconciliador. Menciona las Sobrinas o las Madres cuando aporten información relevante, sobre todo si repiten una figura o contradicen al Juez.\n' +
+  '9. Cuando dos posiciones muestran la MISMA figura (por ejemplo ambos Testigos iguales, o una figura que se repite entre Madres, Hijas o Sobrinas), eso es significativo en geomancia: señálalo y explica qué refuerza o insiste, en lugar de describir la figura dos veces con el mismo texto.\n' +
+  '10. ANCLAJE A LOS DATOS: usa EXCLUSIVAMENTE las figuras provistas en los datos de esta tirada. NUNCA menciones una figura geomántica que no aparezca literalmente en los datos entregados. NUNCA inventes posiciones, casas o figuras fuera del schema provisto. Si hablas de una casa, usa exactamente la figura que la carta de 12 casas lista para esa casa.\n' +
+  '11. No infieras ni asumas el estado emocional del consultante a partir de la pregunta. Interpreta la tirada, no a la persona.\n' +
+  '12. Responde EXCLUSIVAMENTE en español.';
 
 function describirFigura(puntos) {
   const f = figuraPorPuntos(puntos);
@@ -692,15 +697,22 @@ function construirPrompt() {
     'Reconciliador: ' + describirFigura(e.reconciliador),
   ].join('\n');
 
+  const bloqueCasas = CASAS.map(function (casaInfo, idx) {
+    const marca = casaInfo.numero === casaRelevante ? '  ← CASA DEL TEMA' : '';
+    return 'Casa ' + casaInfo.numero + ' (' + casaInfo.significado + '): ' + describirFigura(e.casas[idx]) + marca;
+  }).join('\n');
+
   return INSTRUCCIONES_SISTEMA + '\n\n' +
     '--- CONSULTA ---\n' +
     'Fecha: ' + fechaTexto + '\n' +
     'Pregunta: ' + estado.pregunta + '\n' +
     'Tema seleccionado: ' + estado.tema.etiqueta + (casaRelevante ? ' (casa ' + casaRelevante + ')' : '') + '\n\n' +
     '--- ESCUDO COMPLETO ---\n' + bloqueEscudo + '\n\n' +
+    '--- CARTA DE 12 CASAS (figura asignada a cada casa) ---\n' + bloqueCasas + '\n\n' +
     '--- FIGURA EN LA CASA DEL TEMA ---\n' + figuraCasaRelevante + '\n\n' +
     '--- FIGURA EN CASA 1 (el consultante) ---\n' + figuraCasa1 + '\n\n' +
-    'Redacta la interpretación siguiendo exactamente la jerarquía y estructura indicadas en las reglas.';
+    'Redacta la interpretación siguiendo exactamente la jerarquía y estructura indicadas en las reglas. ' +
+    'Recuerda: solo puedes nombrar figuras que aparezcan literalmente en los datos de arriba.';
 }
 
 const TIMEOUT_GEMINI_MS = 20000;
@@ -738,7 +750,10 @@ async function llamarGeminiConModelo(modelo, apiKey, prompt) {
         generationConfig: {
           temperature: 0.6,
           topP: 0.9,
-          maxOutputTokens: 2048,
+          // 2048 se quedaba corto: en los modelos 2.5 el "thinking" consume parte
+          // del presupuesto de salida y la interpretación llegaba cortada o vacía.
+          maxOutputTokens: 4096,
+          thinkingConfig: { thinkingBudget: 0 },
         },
       }),
       signal: controlador.signal,
@@ -748,16 +763,60 @@ async function llamarGeminiConModelo(modelo, apiKey, prompt) {
   }
 
   if (!respuesta.ok) {
-    throw new Error('Gemini (' + modelo + ') respondió con estado ' + respuesta.status);
+    let cuerpo = '';
+    try { cuerpo = await respuesta.text(); } catch (e) { /* cuerpo ilegible */ }
+    console.error('Gemini (' + modelo + ') estado ' + respuesta.status + '. Cuerpo de la respuesta:', cuerpo);
+    throw new Error('Gemini (' + modelo + ') respondió con estado ' + respuesta.status +
+      (cuerpo ? ' — ' + cuerpo.slice(0, 300) : ''));
   }
 
   const data = await respuesta.json();
-  const partes = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts;
+  const candidato = data.candidates && data.candidates[0];
+  const finishReason = candidato && candidato.finishReason;
+  const partes = candidato && candidato.content && candidato.content.parts;
+
   if (!partes || !partes.length) {
-    throw new Error('Respuesta de Gemini (' + modelo + ') sin contenido utilizable.');
+    console.error('Gemini (' + modelo + ') sin partes utilizables. finishReason=' + finishReason +
+      '. Respuesta:', JSON.stringify(data).slice(0, 600));
+    throw new Error('Respuesta de Gemini (' + modelo + ') sin contenido utilizable (finishReason=' + finishReason + ').');
   }
-  return partes.map(function (p) { return p.text || ''; }).join('');
+  if (finishReason === 'MAX_TOKENS') {
+    console.error('Gemini (' + modelo + ') truncó la respuesta por MAX_TOKENS.');
+    throw new Error('Respuesta de Gemini (' + modelo + ') truncada por límite de tokens.');
+  }
+
+  const texto = partes
+    .filter(function (p) { return !p.thought; })
+    .map(function (p) { return p.text || ''; })
+    .join('');
+  if (!texto.trim()) {
+    console.error('Gemini (' + modelo + ') devolvió texto vacío. finishReason=' + finishReason);
+    throw new Error('Respuesta de Gemini (' + modelo + ') con texto vacío.');
+  }
+  return texto;
 }
+
+/* Validación anti-alucinación: toda figura nombrada en el texto debe existir
+   en alguna posición del escudo. Devuelve los nombres de figuras mencionadas
+   que NO están en la tirada (lista vacía = texto válido). */
+function figurasAlucinadas(texto, escudo) {
+  const presentes = new Set();
+  const posiciones = escudo.madres.concat(
+    escudo.hijas,
+    escudo.sobrinas,
+    [escudo.testigoDerecho, escudo.testigoIzquierdo, escudo.juez, escudo.reconciliador]
+  );
+  posiciones.forEach(function (p) { presentes.add(figuraPorPuntos(p).nombre); });
+
+  return FIGURAS
+    .filter(function (f) {
+      if (presentes.has(f.nombre)) return false;
+      return new RegExp('\\b' + f.nombre + '\\b').test(texto);
+    })
+    .map(function (f) { return f.nombre; });
+}
+
+const MARCA_RESPALDO = '⚠ **LECTURA DE RESPALDO — sin interpretación del modelo**';
 
 function generarRespaldoLocal() {
   const e = estado.escudo;
@@ -779,11 +838,19 @@ function generarRespaldoLocal() {
   }
 
   texto += '**Síntesis**\n\n';
-  texto += 'Esta es una interpretación estructural de respaldo, generada localmente porque el oráculo no pudo consultarse. ' +
-    'Se ofrece a partir del Juez, los Testigos y la casa del tema; para el veredicto completo, reintenta la consulta.';
+  let sintesis = 'El Juez **' + juez.nombre + '**, de naturaleza ' + juez.naturaleza.replace('-', ' ') +
+    ', sentencia el asunto: ' + juez.significado;
+  if (casaRelevante) {
+    const figuraCasa = figuraPorPuntos(e.casas[casaRelevante - 1]);
+    sintesis += ' En la casa ' + casaRelevante + ' (' + estado.tema.etiqueta + ') aparece **' +
+      figuraCasa.nombre + '** (' + figuraCasa.naturaleza.replace('-', ' ') + '), que matiza ese veredicto en el terreno preguntado.';
+  }
+  texto += sintesis;
 
   return texto;
 }
+
+const MAX_INTENTOS_INTERPRETACION = 3; // 1 intento + 2 reintentos
 
 async function solicitarInterpretacion() {
   const estadoEl = document.getElementById('interpretacion-estado');
@@ -791,25 +858,44 @@ async function solicitarInterpretacion() {
   const reintentarBtn = document.getElementById('btn-reintentar');
 
   estadoEl.hidden = false;
-  estadoEl.textContent = 'Consultando al oráculo…';
   textoEl.innerHTML = '';
   reintentarBtn.hidden = true;
+  estado.interpretacion = '';
+  estado.interpretacionEsRespaldo = false;
 
-  try {
-    const prompt = construirPrompt();
-    const texto = await llamarGemini(prompt);
-    estado.interpretacion = texto;
-    estadoEl.hidden = true;
-    textoEl.innerHTML = renderizarMarkdownBasico(texto);
-  } catch (err) {
-    console.error('Fallo al consultar Gemini, usando respaldo local:', err);
-    const texto = generarRespaldoLocal();
-    estado.interpretacion = texto;
-    estadoEl.hidden = false;
-    estadoEl.textContent = 'No se pudo contactar al oráculo. Mostrando lectura estructural de respaldo.';
-    textoEl.innerHTML = renderizarMarkdownBasico(texto);
-    reintentarBtn.hidden = false;
+  const prompt = construirPrompt();
+
+  for (let intento = 1; intento <= MAX_INTENTOS_INTERPRETACION; intento++) {
+    estadoEl.textContent = intento === 1
+      ? 'Consultando al oráculo…'
+      : 'Reintentando la consulta (intento ' + intento + ' de ' + MAX_INTENTOS_INTERPRETACION + ')…';
+    try {
+      const texto = (await llamarGemini(prompt)).trim();
+      if (!texto) {
+        throw new Error('El modelo devolvió una interpretación vacía.');
+      }
+      const alucinadas = figurasAlucinadas(texto, estado.escudo);
+      if (alucinadas.length) {
+        throw new Error('La interpretación menciona figuras que no están en el escudo: ' + alucinadas.join(', '));
+      }
+      estado.interpretacion = texto;
+      estado.interpretacionEsRespaldo = false;
+      estadoEl.hidden = true;
+      textoEl.innerHTML = renderizarMarkdownBasico(texto);
+      return;
+    } catch (err) {
+      console.error('Intento ' + intento + ' de interpretación fallido:', err);
+    }
   }
+
+  // Todos los intentos fallaron: respaldo local, marcado visiblemente al inicio.
+  estado.interpretacionEsRespaldo = true;
+  estado.interpretacion = MARCA_RESPALDO + '\n\n' + generarRespaldoLocal();
+  estadoEl.hidden = false;
+  estadoEl.textContent = 'No se pudo obtener la interpretación del oráculo tras ' +
+    MAX_INTENTOS_INTERPRETACION + ' intentos. Mostrando lectura estructural de respaldo.';
+  textoEl.innerHTML = renderizarMarkdownBasico(estado.interpretacion);
+  reintentarBtn.hidden = false;
 }
 
 function renderizarMarkdownBasico(texto) {
@@ -838,6 +924,10 @@ function construirMarkdownExport() {
   const lineas = [];
   lineas.push('# Consulta de geomancia');
   lineas.push('');
+  if (estado.interpretacionEsRespaldo) {
+    lineas.push('> ' + MARCA_RESPALDO);
+    lineas.push('');
+  }
   lineas.push('**Fecha:** ' + fechaTexto);
   lineas.push('**Pregunta:** ' + estado.pregunta);
   lineas.push('**Tema:** ' + estado.tema.etiqueta + (estado.tema.casa ? ' (casa ' + estado.tema.casa + ')' : ''));
@@ -845,6 +935,11 @@ function construirMarkdownExport() {
   lineas.push('## Semilla (las 4 Madres)');
   e.madres.forEach(function (m, i) {
     lineas.push('- Madre ' + (i + 1) + ': ' + m.join(',') + ' → ' + nombreDe(m));
+  });
+  lineas.push('');
+  lineas.push('## Hijas');
+  e.hijas.forEach(function (h, i) {
+    lineas.push('- Hija ' + (i + 1) + ': ' + h.join(',') + ' → ' + nombreDe(h));
   });
   lineas.push('');
   lineas.push('## Escudo resumido');
@@ -856,9 +951,15 @@ function construirMarkdownExport() {
   lineas.push('- **Juez: ' + nombreDe(e.juez) + '**');
   lineas.push('- Reconciliador: ' + nombreDe(e.reconciliador));
   lineas.push('');
+  lineas.push('## Carta de 12 casas');
+  CASAS.forEach(function (casaInfo, idx) {
+    const marca = casaInfo.numero === estado.tema.casa ? ' ← **casa del tema**' : '';
+    lineas.push('- Casa ' + casaInfo.numero + ' (' + casaInfo.significado + '): ' + nombreDe(e.casas[idx]) + marca);
+  });
+  lineas.push('');
   lineas.push('## Interpretación');
   lineas.push('');
-  lineas.push(estado.interpretacion || '(sin interpretación)');
+  lineas.push(estado.interpretacion || '⚠ (sin interpretación — la consulta al modelo no terminó o falló; este registro no es válido para la bitácora)');
   lineas.push('');
   lineas.push('## Verificación posterior');
   lineas.push('');
@@ -867,14 +968,66 @@ function construirMarkdownExport() {
   return lineas.join('\n');
 }
 
-async function copiarMarkdown() {
+/* El copiado entrega el contenido ya renderizado (text/html) para que las apps
+   de notas del celular lo peguen con formato, más una versión en texto plano
+   sin símbolos de Markdown para las apps que no aceptan texto enriquecido. */
+
+function markdownAHtmlExport(md) {
+  const escapado = md
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  const conNegritas = function (s) { return s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>'); };
+
+  const out = [];
+  let enLista = false;
+  escapado.split('\n').forEach(function (linea) {
+    const l = linea.trim();
+    if (l.indexOf('- ') === 0) {
+      if (!enLista) { out.push('<ul>'); enLista = true; }
+      out.push('<li>' + conNegritas(l.slice(2)) + '</li>');
+      return;
+    }
+    if (enLista) { out.push('</ul>'); enLista = false; }
+    if (!l) return;
+    if (l.indexOf('## ') === 0) { out.push('<h2>' + conNegritas(l.slice(3)) + '</h2>'); return; }
+    if (l.indexOf('# ') === 0) { out.push('<h1>' + conNegritas(l.slice(2)) + '</h1>'); return; }
+    if (l.indexOf('&gt; ') === 0) { out.push('<blockquote>' + conNegritas(l.slice(5)) + '</blockquote>'); return; }
+    out.push('<p>' + conNegritas(l) + '</p>');
+  });
+  if (enLista) out.push('</ul>');
+  return out.join('\n');
+}
+
+function markdownATextoPlano(md) {
+  return md
+    .replace(/^#{1,6}\s*/gm, '')
+    .replace(/^>\s*/gm, '')
+    .replace(/^- /gm, '• ')
+    .replace(/\*\*(.+?)\*\*/g, '$1');
+}
+
+async function copiarLectura() {
   const md = construirMarkdownExport();
+  const html = markdownAHtmlExport(md);
+  const plano = markdownATextoPlano(md);
   const aviso = document.getElementById('aviso-copiado');
   try {
-    await navigator.clipboard.writeText(md);
+    if (navigator.clipboard && window.ClipboardItem) {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'text/html': new Blob([html], { type: 'text/html' }),
+          'text/plain': new Blob([plano], { type: 'text/plain' }),
+        }),
+      ]);
+    } else if (navigator.clipboard) {
+      await navigator.clipboard.writeText(plano);
+    } else {
+      throw new Error('API de portapapeles no disponible.');
+    }
   } catch (err) {
     const area = document.createElement('textarea');
-    area.value = md;
+    area.value = plano;
     area.style.position = 'fixed';
     area.style.opacity = '0';
     document.body.appendChild(area);
@@ -933,6 +1086,7 @@ function reiniciarConsulta(mantenerPregunta) {
   estado.lineas = [];
   estado.escudo = null;
   estado.interpretacion = '';
+  estado.interpretacionEsRespaldo = false;
   estado.fecha = null;
   document.getElementById('barra-calculo-relleno').style.width = '0%';
   mostrarPantalla('pantalla-inicio');
@@ -1001,7 +1155,7 @@ function inicializar() {
 
   document.getElementById('btn-reintentar').addEventListener('click', solicitarInterpretacion);
   document.getElementById('btn-nueva-interpretacion').addEventListener('click', solicitarInterpretacion);
-  document.getElementById('btn-copiar-md').addEventListener('click', copiarMarkdown);
+  document.getElementById('btn-copiar-md').addEventListener('click', copiarLectura);
   document.getElementById('btn-nueva-consulta').addEventListener('click', function () { reiniciarConsulta(false); });
 }
 
@@ -1023,5 +1177,6 @@ if (typeof module !== 'undefined' && module.exports) {
     sumaFiguras: sumaFiguras,
     transponerHijas: transponerHijas,
     calcularEscudo: calcularEscudo,
+    figurasAlucinadas: figurasAlucinadas,
   };
 }
