@@ -39,6 +39,112 @@ function borrarApiKey() {
 }
 
 /* ==========================================================================
+   SUPABASE: SESIÓN Y BITÁCORA PRIVADA
+
+   Todo este módulo es opcional. Si config.js no tiene URL y clave, la app
+   funciona exactamente igual que antes: sin cuenta y sin bitácora.
+   ========================================================================== */
+
+let supabaseCliente = null;
+let usuarioActual = null;
+
+function configSupabase() {
+  const cfg = (typeof window !== 'undefined' && window.GEOMANCIA_CONFIG) || {};
+  return { url: cfg.SUPABASE_URL || '', anonKey: cfg.SUPABASE_ANON_KEY || '' };
+}
+
+function bitacoraDisponible() {
+  const { url, anonKey } = configSupabase();
+  return !!(url && anonKey && typeof window !== 'undefined' && window.supabase);
+}
+
+function iniciarSupabase() {
+  if (!bitacoraDisponible()) return null;
+  if (supabaseCliente) return supabaseCliente;
+  const { url, anonKey } = configSupabase();
+  supabaseCliente = window.supabase.createClient(url, anonKey);
+  return supabaseCliente;
+}
+
+async function enviarEnlaceDeAcceso(email) {
+  const cliente = iniciarSupabase();
+  if (!cliente) throw new Error('La bitácora no está configurada.');
+  const { error } = await cliente.auth.signInWithOtp({
+    email: email,
+    options: { emailRedirectTo: window.location.href.split('#')[0] },
+  });
+  if (error) throw new Error(error.message);
+}
+
+async function cerrarSesion() {
+  const cliente = iniciarSupabase();
+  if (!cliente) return;
+  await cliente.auth.signOut();
+  usuarioActual = null;
+  actualizarUiSesion();
+}
+
+async function guardarConsultaEnBitacora() {
+  const cliente = iniciarSupabase();
+  if (!cliente || !usuarioActual || !estado.escudo || !estado.interpretacion) return null;
+
+  const e = estado.escudo;
+  const fila = {
+    user_id: usuarioActual.id,
+    pregunta: estado.pregunta,
+    tema_id: estado.tema.id,
+    tema_etiqueta: estado.tema.etiqueta,
+    casa_tema: estado.tema.casa,
+    madres: e.madres,
+    hijas: e.hijas,
+    sobrinas: e.sobrinas,
+    testigo_derecho: e.testigoDerecho,
+    testigo_izquierdo: e.testigoIzquierdo,
+    juez: e.juez,
+    reconciliador: e.reconciliador,
+    casas: e.casas,
+    interpretacion: estado.interpretacion,
+    acierto: 'sin_verificar',
+  };
+
+  const { data, error } = await cliente.from('consultas').insert(fila).select('id').single();
+  if (error) {
+    console.error('No se pudo guardar la consulta en la bitácora:', error);
+    return null;
+  }
+  return data && data.id;
+}
+
+async function listarConsultas() {
+  const cliente = iniciarSupabase();
+  if (!cliente || !usuarioActual) return [];
+  const { data, error } = await cliente
+    .from('consultas')
+    .select('*')
+    .order('creada_en', { ascending: false })
+    .limit(100);
+  if (error) {
+    console.error('No se pudo leer la bitácora:', error);
+    throw new Error(error.message);
+  }
+  return data || [];
+}
+
+async function guardarVerificacion(id, resultadoReal, acierto) {
+  const cliente = iniciarSupabase();
+  if (!cliente || !usuarioActual) throw new Error('No hay sesión abierta.');
+  const { error } = await cliente
+    .from('consultas')
+    .update({
+      resultado_real: resultadoReal,
+      acierto: acierto,
+      verificada_en: new Date().toISOString(),
+    })
+    .eq('id', id);
+  if (error) throw new Error(error.message);
+}
+
+/* ==========================================================================
    DATOS: LAS 16 FIGURAS GEOMÁNTICAS
    Cada figura: 4 filas [cabeza, cuello, cuerpo, pies].
    1 = punto simple (impar / activo). 2 = punto doble (par / pasivo).
@@ -880,6 +986,15 @@ async function solicitarInterpretacion() {
       estado.interpretacion = texto;
       estadoEl.hidden = true;
       textoEl.innerHTML = renderizarMarkdownBasico(texto);
+      // Solo se guardan tiradas con interpretación válida del modelo.
+      guardarConsultaEnBitacora().then(function (id) {
+        if (!id) return;
+        const avisoGuardado = document.getElementById('aviso-guardado');
+        if (avisoGuardado) {
+          avisoGuardado.hidden = false;
+          setTimeout(function () { avisoGuardado.hidden = true; }, 2500);
+        }
+      });
       return;
     } catch (err) {
       console.error('Intento ' + intento + ' de interpretación fallido:', err);
@@ -1081,6 +1196,228 @@ function salirDePantallaClave() {
 }
 
 /* ==========================================================================
+   UI DE SESIÓN Y BITÁCORA
+   ========================================================================== */
+
+// Recupera la sesión existente (el enlace de acceso vuelve con el token en la
+// URL) y queda escuchando los cambios de sesión.
+function inicializarSesion() {
+  const cliente = iniciarSupabase();
+  if (!cliente) {
+    actualizarUiSesion();
+    return;
+  }
+
+  cliente.auth.onAuthStateChange(function (evento, sesion) {
+    usuarioActual = (sesion && sesion.user) || null;
+    actualizarUiSesion();
+  });
+
+  cliente.auth.getSession().then(function (res) {
+    usuarioActual = (res && res.data && res.data.session && res.data.session.user) || null;
+    actualizarUiSesion();
+    // Limpia el token del enlace de acceso de la barra de direcciones.
+    if (usuarioActual && window.location.hash.indexOf('access_token') !== -1) {
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+  });
+}
+
+function actualizarUiSesion() {
+  const btnBitacora = document.getElementById('btn-bitacora');
+  const btnSesion = document.getElementById('btn-sesion');
+  const estadoEl = document.getElementById('estado-sesion');
+  if (!btnBitacora || !btnSesion || !estadoEl) return;
+
+  if (!bitacoraDisponible()) {
+    btnBitacora.hidden = true;
+    btnSesion.hidden = true;
+    estadoEl.hidden = true;
+    return;
+  }
+
+  const dentro = !!usuarioActual;
+  btnBitacora.hidden = !dentro;
+  btnSesion.hidden = dentro;
+  estadoEl.hidden = !dentro;
+  if (dentro) estadoEl.textContent = 'Sesión de ' + usuarioActual.email;
+}
+
+async function enviarEnlaceDesdeFormulario() {
+  const input = document.getElementById('input-email');
+  const errorEl = document.getElementById('error-email');
+  const avisoEl = document.getElementById('aviso-enlace');
+  const boton = document.getElementById('btn-enviar-enlace');
+  const email = input.value.trim();
+
+  if (!email || email.indexOf('@') < 1 || email.indexOf('.') < 0) {
+    errorEl.textContent = 'Escribí un email válido.';
+    errorEl.hidden = false;
+    avisoEl.hidden = true;
+    return;
+  }
+
+  errorEl.hidden = true;
+  boton.disabled = true;
+  boton.textContent = 'Enviando…';
+  try {
+    await enviarEnlaceDeAcceso(email);
+    avisoEl.hidden = false;
+  } catch (err) {
+    console.error('No se pudo enviar el enlace de acceso:', err);
+    errorEl.textContent = 'No se pudo enviar el enlace: ' + err.message;
+    errorEl.hidden = false;
+  } finally {
+    boton.disabled = false;
+    boton.textContent = 'Enviarme el enlace';
+  }
+}
+
+function fechaLegible(iso) {
+  try {
+    return new Date(iso).toLocaleString('es-ES');
+  } catch (err) {
+    return iso;
+  }
+}
+
+const ETIQUETAS_ACIERTO = {
+  acerto: 'Acertó',
+  parcial: 'Parcial',
+  fallo: 'Falló',
+  sin_verificar: 'Sin verificar',
+};
+
+async function abrirBitacora() {
+  mostrarPantalla('pantalla-bitacora');
+  const estadoEl = document.getElementById('estado-bitacora');
+  const listaEl = document.getElementById('lista-bitacora');
+  estadoEl.hidden = false;
+  estadoEl.textContent = 'Cargando…';
+  listaEl.innerHTML = '';
+
+  let consultas;
+  try {
+    consultas = await listarConsultas();
+  } catch (err) {
+    estadoEl.textContent = 'No se pudo cargar la bitácora: ' + err.message;
+    return;
+  }
+
+  if (!consultas.length) {
+    estadoEl.textContent = 'Todavía no hay consultas guardadas.';
+    return;
+  }
+
+  estadoEl.hidden = true;
+  consultas.forEach(function (c) {
+    listaEl.appendChild(crearTarjetaBitacora(c));
+  });
+}
+
+function crearTarjetaBitacora(consulta) {
+  const juez = figuraPorPuntos(consulta.juez);
+  const item = document.createElement('details');
+  item.className = 'entrada-bitacora';
+
+  const resumen = document.createElement('summary');
+  const acierto = consulta.acierto || 'sin_verificar';
+  resumen.innerHTML =
+    '<span class="entrada-pregunta"></span>' +
+    '<span class="entrada-meta"></span>' +
+    '<span class="marca-acierto ' + acierto + '"></span>';
+  resumen.querySelector('.entrada-pregunta').textContent = consulta.pregunta;
+  resumen.querySelector('.entrada-meta').textContent =
+    fechaLegible(consulta.creada_en) + ' · Juez: ' + juez.nombre;
+  resumen.querySelector('.marca-acierto').textContent = ETIQUETAS_ACIERTO[acierto];
+  item.appendChild(resumen);
+
+  const cuerpo = document.createElement('div');
+  cuerpo.className = 'entrada-cuerpo';
+
+  const meta = document.createElement('p');
+  meta.className = 'entrada-tema';
+  meta.textContent = 'Tema: ' + consulta.tema_etiqueta +
+    (consulta.casa_tema ? ' (casa ' + consulta.casa_tema + ')' : '');
+  cuerpo.appendChild(meta);
+
+  const interp = document.createElement('div');
+  interp.className = 'interpretacion-texto';
+  interp.innerHTML = renderizarMarkdownBasico(consulta.interpretacion);
+  cuerpo.appendChild(interp);
+
+  cuerpo.appendChild(crearFormularioVerificacion(consulta));
+  item.appendChild(cuerpo);
+  return item;
+}
+
+function crearFormularioVerificacion(consulta) {
+  const form = document.createElement('div');
+  form.className = 'verificacion';
+
+  const titulo = document.createElement('h4');
+  titulo.textContent = 'Verificación posterior';
+  form.appendChild(titulo);
+
+  const area = document.createElement('textarea');
+  area.rows = 3;
+  area.placeholder = 'Qué ocurrió realmente…';
+  area.value = consulta.resultado_real || '';
+  form.appendChild(area);
+
+  const fila = document.createElement('div');
+  fila.className = 'fila-acierto';
+  const seleccion = { valor: consulta.acierto || 'sin_verificar' };
+  const botones = [];
+
+  ['acerto', 'parcial', 'fallo'].forEach(function (valor) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn-acierto' + (seleccion.valor === valor ? ' activo' : '');
+    btn.textContent = ETIQUETAS_ACIERTO[valor];
+    btn.addEventListener('click', function () {
+      seleccion.valor = valor;
+      botones.forEach(function (b) { b.classList.remove('activo'); });
+      btn.classList.add('activo');
+    });
+    botones.push(btn);
+    fila.appendChild(btn);
+  });
+  form.appendChild(fila);
+
+  const guardar = document.createElement('button');
+  guardar.type = 'button';
+  guardar.className = 'btn btn-secundario';
+  guardar.textContent = 'Guardar verificación';
+  const aviso = document.createElement('p');
+  aviso.className = 'aviso-guardado';
+  aviso.hidden = true;
+
+  guardar.addEventListener('click', async function () {
+    guardar.disabled = true;
+    guardar.textContent = 'Guardando…';
+    try {
+      await guardarVerificacion(consulta.id, area.value.trim(), seleccion.valor);
+      aviso.textContent = 'Verificación guardada.';
+      aviso.hidden = false;
+      const marca = form.closest('.entrada-bitacora').querySelector('.marca-acierto');
+      marca.className = 'marca-acierto ' + seleccion.valor;
+      marca.textContent = ETIQUETAS_ACIERTO[seleccion.valor];
+    } catch (err) {
+      aviso.textContent = 'No se pudo guardar: ' + err.message;
+      aviso.hidden = false;
+    } finally {
+      guardar.disabled = false;
+      guardar.textContent = 'Guardar verificación';
+    }
+  });
+
+  form.appendChild(guardar);
+  form.appendChild(aviso);
+  return form;
+}
+
+/* ==========================================================================
    REINICIO DE CONSULTA
    ========================================================================== */
 
@@ -1117,6 +1454,30 @@ function reiniciarConsulta(mantenerPregunta) {
 
 function inicializar() {
   poblarSelectTemas();
+  inicializarSesion();
+
+  document.getElementById('btn-sesion').addEventListener('click', function () {
+    document.getElementById('error-email').hidden = true;
+    document.getElementById('aviso-enlace').hidden = true;
+    mostrarPantalla('pantalla-sesion');
+  });
+
+  document.getElementById('btn-volver-sesion').addEventListener('click', function () {
+    mostrarPantalla('pantalla-inicio');
+  });
+
+  document.getElementById('btn-enviar-enlace').addEventListener('click', enviarEnlaceDesdeFormulario);
+
+  document.getElementById('btn-bitacora').addEventListener('click', abrirBitacora);
+
+  document.getElementById('btn-volver-bitacora').addEventListener('click', function () {
+    mostrarPantalla('pantalla-inicio');
+  });
+
+  document.getElementById('btn-cerrar-sesion').addEventListener('click', async function () {
+    await cerrarSesion();
+    mostrarPantalla('pantalla-inicio');
+  });
 
   document.getElementById('btn-comenzar').addEventListener('click', function () {
     if (!getApiKey()) {
