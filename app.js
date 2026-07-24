@@ -66,14 +66,37 @@ function iniciarSupabase() {
   return supabaseCliente;
 }
 
-async function enviarEnlaceDeAcceso(email) {
+/* Acceso con email y contraseña. No se manda ningún correo: el servicio de
+   correo incluido de Supabase no permite editar las plantillas sin SMTP propio
+   y tiene un límite de envío muy bajo, así que el enlace mágico resultaba poco
+   fiable. Requiere tener desactivado "Confirm email" en Supabase. */
+
+async function entrarConContrasena(email, contrasena) {
   const cliente = iniciarSupabase();
   if (!cliente) throw new Error('La bitácora no está configurada.');
-  const { error } = await cliente.auth.signInWithOtp({
+  const { error } = await cliente.auth.signInWithPassword({
     email: email,
-    options: { emailRedirectTo: window.location.href.split('#')[0] },
+    password: contrasena,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw error;
+}
+
+async function crearCuenta(email, contrasena) {
+  const cliente = iniciarSupabase();
+  if (!cliente) throw new Error('La bitácora no está configurada.');
+  const { data, error } = await cliente.auth.signUp({
+    email: email,
+    password: contrasena,
+  });
+  if (error) throw error;
+  // Con "Confirm email" activado no llega sesión: hay que avisarlo, porque el
+  // correo de confirmación depende de la plantilla que no se puede editar.
+  if (!data.session) {
+    throw new Error(
+      'La cuenta se creó pero quedó pendiente de confirmación por correo. ' +
+      'Desactivá "Confirm email" en Supabase (Authentication → Sign In / Providers → Email) para entrar directo.'
+    );
+  }
 }
 
 async function cerrarSesion() {
@@ -1226,8 +1249,8 @@ function mostrarErrorSesion(mensaje) {
 }
 
 const MENSAJES_ERROR_AUTH = {
-  otp_expired: 'El enlace ya venció o fue usado. Los filtros de correo a veces lo abren primero y lo consumen. Pedí uno nuevo, o entrá con el código de 6 dígitos.',
-  access_denied: 'El enlace no pudo validarse. Pedí uno nuevo, o entrá con el código de 6 dígitos.',
+  otp_expired: 'Ese enlace ya venció o fue usado. Entrá con tu email y contraseña.',
+  access_denied: 'El enlace no pudo validarse. Entrá con tu email y contraseña.',
 };
 
 // Recupera la sesión existente (el enlace de acceso vuelve con el token en la
@@ -1267,26 +1290,13 @@ function inicializarSesion() {
     mostrarErrorSesion(
       conocido ||
       ('No se pudo iniciar sesión con el enlace' + (codigo ? ' (' + codigo + ')' : '') + '. ' +
-       (detalle || 'Pedí uno nuevo, o entrá con el código de 6 dígitos.'))
+       (detalle || 'Entrá con tu email y contraseña.'))
     );
     mostrarPantalla('pantalla-sesion');
     limpiarUrlDeAuth();
   });
 }
 
-/* Acceso con el código de 6 dígitos del correo. Es más robusto que el enlace
-   en el celular: no depende del redirect ni de en qué navegador se abra, y no
-   lo pueden consumir los escáneres de correo. */
-async function entrarConCodigo(email, codigo) {
-  const cliente = iniciarSupabase();
-  if (!cliente) throw new Error('La bitácora no está configurada.');
-  const { error } = await cliente.auth.verifyOtp({
-    email: email,
-    token: codigo,
-    type: 'email',
-  });
-  if (error) throw new Error(error.message);
-}
 
 function actualizarUiSesion() {
   const btnBitacora = document.getElementById('btn-bitacora');
@@ -1308,69 +1318,90 @@ function actualizarUiSesion() {
   if (dentro) estadoEl.textContent = 'Sesión de ' + usuarioActual.email;
 }
 
-async function enviarEnlaceDesdeFormulario() {
-  const input = document.getElementById('input-email');
+/* Un solo formulario para entrar o crear la cuenta. */
+function credencialesDelFormulario() {
+  const email = document.getElementById('input-email').value.trim();
+  const contrasena = document.getElementById('input-password').value;
   const errorEl = document.getElementById('error-email');
-  const avisoEl = document.getElementById('aviso-enlace');
-  const boton = document.getElementById('btn-enviar-enlace');
-  const email = input.value.trim();
 
   if (!email || email.indexOf('@') < 1 || email.indexOf('.') < 0) {
     errorEl.textContent = 'Escribí un email válido.';
     errorEl.hidden = false;
-    avisoEl.hidden = true;
-    return;
+    return null;
   }
-
+  if (contrasena.length < 6) {
+    errorEl.textContent = 'La contraseña necesita al menos 6 caracteres.';
+    errorEl.hidden = false;
+    return null;
+  }
   errorEl.hidden = true;
   mostrarErrorSesion('');
+  return { email: email, contrasena: contrasena };
+}
+
+// Traduce los errores de Supabase a algo accionable en castellano.
+function mensajeDeErrorAuth(err) {
+  const codigo = (err && err.code) || '';
+  const texto = (err && err.message) || '';
+  if (codigo === 'invalid_credentials' || /Invalid login credentials/i.test(texto)) {
+    return 'Email o contraseña incorrectos. Si todavía no tenés cuenta, tocá "crear una".';
+  }
+  if (codigo === 'user_already_exists' || /already registered/i.test(texto)) {
+    return 'Ya existe una cuenta con ese email. Entrá con su contraseña. ' +
+      'Si la cuenta vieja se creó con enlace mágico y no tiene contraseña, borrala en Supabase (Authentication → Users) y volvé a crearla.';
+  }
+  if (codigo === 'weak_password' || /Password should be/i.test(texto)) {
+    return 'La contraseña es demasiado débil: usá al menos 6 caracteres.';
+  }
+  if (codigo === 'email_address_invalid' || /invalid.*email/i.test(texto)) {
+    return 'Supabase rechazó ese email. Probá con otra dirección.';
+  }
+  if (/signups not allowed|Signup is disabled/i.test(texto)) {
+    return 'El registro está desactivado en Supabase. Activá "Allow new users to sign up" en Authentication → Sign In / Providers.';
+  }
+  return texto || 'No se pudo completar la operación.';
+}
+
+async function conBotonOcupado(boton, textoOcupado, accion) {
+  const original = boton.textContent;
   boton.disabled = true;
-  boton.textContent = 'Enviando…';
+  boton.textContent = textoOcupado;
   try {
-    await enviarEnlaceDeAcceso(email);
-    avisoEl.hidden = false;
-    document.getElementById('bloque-codigo').classList.add('visible');
-  } catch (err) {
-    console.error('No se pudo enviar el enlace de acceso:', err);
-    errorEl.textContent = 'No se pudo enviar el enlace: ' + err.message;
-    errorEl.hidden = false;
+    await accion();
   } finally {
     boton.disabled = false;
-    boton.textContent = 'Enviarme el acceso';
+    boton.textContent = original;
   }
 }
 
-async function entrarConCodigoDesdeFormulario() {
-  const email = document.getElementById('input-email').value.trim();
-  const codigo = document.getElementById('input-codigo').value.trim();
-  const errorEl = document.getElementById('error-email');
-  const boton = document.getElementById('btn-entrar-codigo');
+async function entrarDesdeFormulario() {
+  const cred = credencialesDelFormulario();
+  if (!cred) return;
+  const boton = document.getElementById('btn-entrar');
+  await conBotonOcupado(boton, 'Entrando…', async function () {
+    try {
+      await entrarConContrasena(cred.email, cred.contrasena);
+      mostrarPantalla('pantalla-inicio');
+    } catch (err) {
+      console.error('No se pudo entrar:', err);
+      mostrarErrorSesion(mensajeDeErrorAuth(err));
+    }
+  });
+}
 
-  if (!email) {
-    errorEl.textContent = 'Escribí arriba el email al que llegó el código.';
-    errorEl.hidden = false;
-    return;
-  }
-  if (!/^\d{6}$/.test(codigo)) {
-    errorEl.textContent = 'El código son 6 dígitos.';
-    errorEl.hidden = false;
-    return;
-  }
-
-  errorEl.hidden = true;
-  mostrarErrorSesion('');
-  boton.disabled = true;
-  boton.textContent = 'Entrando…';
-  try {
-    await entrarConCodigo(email, codigo);
-    mostrarPantalla('pantalla-inicio');
-  } catch (err) {
-    console.error('No se pudo entrar con el código:', err);
-    mostrarErrorSesion('El código no sirvió: ' + err.message);
-  } finally {
-    boton.disabled = false;
-    boton.textContent = 'Entrar con el código';
-  }
+async function crearCuentaDesdeFormulario() {
+  const cred = credencialesDelFormulario();
+  if (!cred) return;
+  const boton = document.getElementById('btn-crear-cuenta');
+  await conBotonOcupado(boton, 'Creando…', async function () {
+    try {
+      await crearCuenta(cred.email, cred.contrasena);
+      mostrarPantalla('pantalla-inicio');
+    } catch (err) {
+      console.error('No se pudo crear la cuenta:', err);
+      mostrarErrorSesion(mensajeDeErrorAuth(err));
+    }
+  });
 }
 
 function fechaLegible(iso) {
@@ -1558,18 +1589,23 @@ function inicializar() {
 
   document.getElementById('btn-sesion').addEventListener('click', function () {
     document.getElementById('error-email').hidden = true;
-    document.getElementById('aviso-enlace').hidden = true;
     mostrarErrorSesion('');
     mostrarPantalla('pantalla-sesion');
   });
-
-  document.getElementById('btn-entrar-codigo').addEventListener('click', entrarConCodigoDesdeFormulario);
 
   document.getElementById('btn-volver-sesion').addEventListener('click', function () {
     mostrarPantalla('pantalla-inicio');
   });
 
-  document.getElementById('btn-enviar-enlace').addEventListener('click', enviarEnlaceDesdeFormulario);
+  document.getElementById('btn-entrar').addEventListener('click', entrarDesdeFormulario);
+  document.getElementById('btn-crear-cuenta').addEventListener('click', crearCuentaDesdeFormulario);
+
+  // Enter en cualquiera de los dos campos entra directo.
+  ['input-email', 'input-password'].forEach(function (id) {
+    document.getElementById(id).addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter') entrarDesdeFormulario();
+    });
+  });
 
   document.getElementById('btn-bitacora').addEventListener('click', abrirBitacora);
 
