@@ -731,9 +731,12 @@ async function llamarGemini(prompt) {
     } catch (err) {
       console.error('Fallo el modelo ' + modelo + ':', err);
       ultimoError = err;
-      // Algunos modelos rechazan thinkingConfig con un 400: se reintenta sin él
+      // Algunos modelos (p. ej. gemini-flash-lite-latest) rechazan thinkingConfig
+      // con un 400 INVALID_ARGUMENT genérico que no menciona el campo. Ante cualquier
+      // 400 / argumento inválido se reintenta el MISMO modelo sin thinkingConfig
       // antes de pasar al siguiente candidato.
-      if (err && /thinking/i.test(err.message || '')) {
+      const msg = (err && err.message) || '';
+      if (/thinking|invalid.?argument|INVALID_ARGUMENT|estado 400/i.test(msg)) {
         try {
           return await llamarGeminiConModelo(modelo, apiKey, prompt, false);
         } catch (err2) {
@@ -764,7 +767,8 @@ async function llamarGeminiConModelo(modelo, apiKey, prompt, conThinkingConfig) 
             topP: 0.9,
             // 2048 se quedaba corto: en los modelos 2.5 el "thinking" consume parte
             // del presupuesto de salida y la interpretación llegaba cortada o vacía.
-            maxOutputTokens: 4096,
+            // Sin thinkingConfig el modelo puede razonar, así que se da más margen.
+            maxOutputTokens: conThinkingConfig ? 4096 : 8192,
           },
           conThinkingConfig ? { thinkingConfig: { thinkingBudget: 0 } } : {}
         ),
