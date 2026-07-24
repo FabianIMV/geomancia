@@ -58,11 +58,65 @@ function bitacoraDisponible() {
   return !!(url && anonKey && typeof window !== 'undefined' && window.supabase);
 }
 
+/* Almacenamiento a prueba de fallos para la sesión.
+
+   Supabase comprueba si localStorage sirve escribiendo una clave diminuta; si
+   pasa, usa localStorage crudo. Pero si el espacio está casi lleno esa prueba
+   pasa y la escritura real de la sesión (varios KB) lanza QuotaExceededError,
+   que nadie atrapa y termina abortando el login ("The quota has been exceeded").
+
+   Este adaptador intenta localStorage y, si falla por lo que sea, sigue en
+   memoria: entrar siempre funciona, aunque la sesión no sobreviva al recargar. */
+let almacenamientoEnMemoria = false;
+
+function crearAlmacenamientoSeguro() {
+  const memoria = Object.create(null);
+  return {
+    getItem: function (clave) {
+      try {
+        const valor = window.localStorage.getItem(clave);
+        if (valor !== null) return valor;
+      } catch (err) { /* sin acceso: se cae a memoria */ }
+      return clave in memoria ? memoria[clave] : null;
+    },
+    setItem: function (clave, valor) {
+      try {
+        window.localStorage.setItem(clave, valor);
+        delete memoria[clave];
+        return;
+      } catch (err) {
+        // Puede ser espacio agotado: se libera lo que ya no sirve y se reintenta.
+        try {
+          window.localStorage.removeItem(clave);
+          window.localStorage.setItem(clave, valor);
+          delete memoria[clave];
+          return;
+        } catch (err2) {
+          console.warn('No se pudo guardar la sesión en localStorage; se usa memoria.', err2);
+          memoria[clave] = valor;
+          almacenamientoEnMemoria = true;
+          actualizarUiSesion();
+        }
+      }
+    },
+    removeItem: function (clave) {
+      try { window.localStorage.removeItem(clave); } catch (err) { /* nada que hacer */ }
+      delete memoria[clave];
+    },
+  };
+}
+
 function iniciarSupabase() {
   if (!bitacoraDisponible()) return null;
   if (supabaseCliente) return supabaseCliente;
   const { url, anonKey } = configSupabase();
-  supabaseCliente = window.supabase.createClient(url, anonKey);
+  supabaseCliente = window.supabase.createClient(url, anonKey, {
+    auth: {
+      storage: crearAlmacenamientoSeguro(),
+      persistSession: true,
+      autoRefreshToken: true,
+    },
+  });
   return supabaseCliente;
 }
 
@@ -1315,7 +1369,10 @@ function actualizarUiSesion() {
   btnBitacora.hidden = !dentro;
   btnSesion.hidden = dentro;
   estadoEl.hidden = !dentro;
-  if (dentro) estadoEl.textContent = 'Sesión de ' + usuarioActual.email;
+  if (dentro) {
+    estadoEl.textContent = 'Sesión de ' + usuarioActual.email +
+      (almacenamientoEnMemoria ? ' · no se pudo guardar en este navegador: al recargar habrá que entrar de nuevo' : '');
+  }
 }
 
 /* Un solo formulario para entrar o crear la cuenta. */
@@ -1358,6 +1415,13 @@ function mensajeDeErrorAuth(err) {
   }
   if (/signups not allowed|Signup is disabled/i.test(texto)) {
     return 'El registro está desactivado en Supabase. Activá "Allow new users to sign up" en Authentication → Sign In / Providers.';
+  }
+  if ((err && err.name === 'QuotaExceededError') || /quota has been exceeded|exceeded the quota/i.test(texto)) {
+    return 'El almacenamiento de este navegador está lleno, así que no se pudo guardar la sesión. ' +
+      'Probá de nuevo: ahora la sesión sigue en memoria. Para que quede guardada, liberá espacio del navegador.';
+  }
+  if (codigo === 'over_request_rate_limit' || /rate limit/i.test(texto) || (err && err.status === 429)) {
+    return 'Demasiados intentos seguidos. Esperá unos minutos y volvé a probar.';
   }
   return texto || 'No se pudo completar la operación.';
 }
