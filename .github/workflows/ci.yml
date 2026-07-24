@@ -1,0 +1,46 @@
+name: Verificaciones
+
+# Corre en cada push y en cada pull request. El despliegue depende de que esto
+# pase (ver deploy.yml), así que un fallo acá impide publicar la app rota.
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_call:
+
+jobs:
+  verificar:
+    name: Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Preparar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Instalar dependencias
+        run: npm install
+
+      - name: Verificar figuras y matemática del escudo
+        run: npm run verificar
+
+      - name: Instalar Chromium para los tests
+        run: npx playwright install --with-deps chromium
+
+      - name: Tests de la app
+        run: npx playwright test
+
+      - name: Guardar el informe si algo falló
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: informe-playwright
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7

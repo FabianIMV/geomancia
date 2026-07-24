@@ -15,7 +15,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # No se publica nada sin que las verificaciones pasen.
+  verificar:
+    uses: ./.github/workflows/ci.yml
+
   build:
+    needs: verificar
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

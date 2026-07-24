@@ -1,0 +1,13 @@
+{
+  "name": "geomancia",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Oráculo hermético de geomancia occidental clásica.",
+  "scripts": {
+    "verificar": "node scripts/verify-figures.js",
+    "test": "npm run verificar && playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0"
+  }
+}
