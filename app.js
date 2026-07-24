@@ -726,16 +726,26 @@ async function llamarGemini(prompt) {
   let ultimoError = null;
   for (const modelo of GEMINI_MODEL_CANDIDATES) {
     try {
-      return await llamarGeminiConModelo(modelo, apiKey, prompt);
+      return await llamarGeminiConModelo(modelo, apiKey, prompt, true);
     } catch (err) {
-      console.error('Fallo el modelo ' + modelo + ', probando el siguiente:', err);
+      console.error('Fallo el modelo ' + modelo + ':', err);
       ultimoError = err;
+      // Algunos modelos rechazan thinkingConfig con un 400: se reintenta sin él
+      // antes de pasar al siguiente candidato.
+      if (err && /thinking/i.test(err.message || '')) {
+        try {
+          return await llamarGeminiConModelo(modelo, apiKey, prompt, false);
+        } catch (err2) {
+          console.error('Fallo el modelo ' + modelo + ' también sin thinkingConfig:', err2);
+          ultimoError = err2;
+        }
+      }
     }
   }
   throw ultimoError || new Error('Ningún modelo de Gemini respondió.');
 }
 
-async function llamarGeminiConModelo(modelo, apiKey, prompt) {
+async function llamarGeminiConModelo(modelo, apiKey, prompt, conThinkingConfig) {
   const url = construirUrlGemini(modelo) + '?key=' + encodeURIComponent(apiKey);
   const controlador = new AbortController();
   const timeoutId = setTimeout(function () { controlador.abort(); }, TIMEOUT_GEMINI_MS);
@@ -747,14 +757,16 @@ async function llamarGeminiConModelo(modelo, apiKey, prompt) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.6,
-          topP: 0.9,
-          // 2048 se quedaba corto: en los modelos 2.5 el "thinking" consume parte
-          // del presupuesto de salida y la interpretación llegaba cortada o vacía.
-          maxOutputTokens: 4096,
-          thinkingConfig: { thinkingBudget: 0 },
-        },
+        generationConfig: Object.assign(
+          {
+            temperature: 0.6,
+            topP: 0.9,
+            // 2048 se quedaba corto: en los modelos 2.5 el "thinking" consume parte
+            // del presupuesto de salida y la interpretación llegaba cortada o vacía.
+            maxOutputTokens: 4096,
+          },
+          conThinkingConfig ? { thinkingConfig: { thinkingBudget: 0 } } : {}
+        ),
       }),
       signal: controlador.signal,
     });
@@ -863,19 +875,23 @@ async function solicitarInterpretacion() {
   estado.interpretacion = '';
   estado.interpretacionEsRespaldo = false;
 
-  const prompt = construirPrompt();
+  const promptBase = construirPrompt();
+  let notaCorrectiva = '';
+  let ultimoError = null;
 
   for (let intento = 1; intento <= MAX_INTENTOS_INTERPRETACION; intento++) {
     estadoEl.textContent = intento === 1
       ? 'Consultando al oráculo…'
       : 'Reintentando la consulta (intento ' + intento + ' de ' + MAX_INTENTOS_INTERPRETACION + ')…';
     try {
-      const texto = (await llamarGemini(prompt)).trim();
+      const texto = (await llamarGemini(promptBase + notaCorrectiva)).trim();
       if (!texto) {
         throw new Error('El modelo devolvió una interpretación vacía.');
       }
       const alucinadas = figurasAlucinadas(texto, estado.escudo);
       if (alucinadas.length) {
+        notaCorrectiva = '\n\nATENCIÓN: en un intento anterior mencionaste figuras que NO están en esta tirada: ' +
+          alucinadas.join(', ') + '. No las nombres. Usa solo las figuras listadas en los datos de arriba.';
         throw new Error('La interpretación menciona figuras que no están en el escudo: ' + alucinadas.join(', '));
       }
       estado.interpretacion = texto;
@@ -885,6 +901,7 @@ async function solicitarInterpretacion() {
       return;
     } catch (err) {
       console.error('Intento ' + intento + ' de interpretación fallido:', err);
+      ultimoError = err;
     }
   }
 
@@ -893,7 +910,8 @@ async function solicitarInterpretacion() {
   estado.interpretacion = MARCA_RESPALDO + '\n\n' + generarRespaldoLocal();
   estadoEl.hidden = false;
   estadoEl.textContent = 'No se pudo obtener la interpretación del oráculo tras ' +
-    MAX_INTENTOS_INTERPRETACION + ' intentos. Mostrando lectura estructural de respaldo.';
+    MAX_INTENTOS_INTERPRETACION + ' intentos. Mostrando lectura estructural de respaldo.' +
+    (ultimoError ? ' Último error: ' + ultimoError.message : '');
   textoEl.innerHTML = renderizarMarkdownBasico(estado.interpretacion);
   reintentarBtn.hidden = false;
 }
