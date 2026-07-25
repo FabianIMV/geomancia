@@ -24,4 +24,15 @@
 window.GEOMANCIA_CONFIG = {
   SUPABASE_URL: 'https://cvzcjrhxifecieeefdpq.supabase.co',
   SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2emNqcmh4aWZlY2llZWVmZHBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5MTUzNDYsImV4cCI6MjEwMDQ5MTM0Nn0.05a_l0G6rx-YbxZElo80k16lYb1YW2L0z7ZngpB1W78',
+
+  /* Sentry (monitoreo de errores) — opcional. Sin DSN no se activa nada.
+
+     El DSN es público por diseño, igual que la clave anónima: solo sirve para
+     ENVIAR errores, no para leerlos. Se saca de Sentry → Settings → Projects →
+     [tu proyecto] → Client Keys (DSN).
+
+     Antes de salir del navegador, cada evento pasa por un saneado que quita la
+     pregunta, la interpretación, las claves, los tokens y los emails. */
+  SENTRY_DSN: '',
+  SENTRY_ENTORNO: 'produccion',
 };

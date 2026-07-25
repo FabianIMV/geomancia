@@ -1,0 +1,31 @@
+version: 2
+
+# Avisa cuando las dependencias quedan viejas, en vez de enterarnos cuando algo
+# se rompe. Son pocas y muy acotadas, así que se agrupan en un solo PR mensual
+# para no llenar el repositorio de ruido.
+updates:
+  # Dependencias de los tests (Playwright).
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 3
+    groups:
+      testing:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "deps"
+
+  # Las acciones de los workflows (checkout, setup-node, github-script…).
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 3
+    groups:
+      acciones:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "ci"
