@@ -2192,6 +2192,16 @@ function inicializar() {
   document.getElementById('btn-entrar').addEventListener('click', entrarDesdeFormulario);
   document.getElementById('btn-crear-cuenta').addEventListener('click', crearCuentaDesdeFormulario);
 
+  // Para ver si el celular autocompletó una contraseña distinta a la esperada
+  // (Safari y Chrome guardan credenciales por separado).
+  document.getElementById('btn-ver-password').addEventListener('click', function () {
+    const input = document.getElementById('input-password');
+    const verlo = input.type === 'password';
+    input.type = verlo ? 'text' : 'password';
+    this.textContent = verlo ? 'Ocultar' : 'Ver';
+    this.setAttribute('aria-label', verlo ? 'Ocultar contraseña' : 'Mostrar contraseña');
+  });
+
   // Enter en cualquiera de los dos campos entra directo.
   ['input-email', 'input-password'].forEach(function (id) {
     document.getElementById(id).addEventListener('keydown', function (ev) {

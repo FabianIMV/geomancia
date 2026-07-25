@@ -83,10 +83,19 @@
       <p class="error" id="error-sesion" hidden></p>
 
       <label for="input-email">Tu email</label>
-      <input type="email" id="input-email" placeholder="tunombre@ejemplo.com" autocomplete="email" spellcheck="false">
+      <input type="email" id="input-email" placeholder="tunombre@ejemplo.com" autocomplete="email"
+             autocapitalize="off" autocorrect="off" spellcheck="false">
 
       <label for="input-password">Tu contraseña</label>
-      <input type="password" id="input-password" placeholder="Al menos 6 caracteres" autocomplete="current-password">
+      <div class="fila-password">
+        <input type="password" id="input-password" placeholder="Al menos 6 caracteres" autocomplete="current-password"
+               autocapitalize="off" autocorrect="off" spellcheck="false">
+        <button type="button" id="btn-ver-password" class="btn-ver-password" aria-label="Mostrar contraseña">Ver</button>
+      </div>
+      <p class="nota-api-key">
+        Si el celular autocompletó la contraseña, tocá "Ver" antes de entrar para confirmar que es la correcta —
+        Safari y Chrome guardan contraseñas por separado y a veces sugieren una distinta.
+      </p>
 
       <p class="error" id="error-email" hidden></p>
 
