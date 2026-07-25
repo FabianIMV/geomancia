@@ -33,6 +33,6 @@ window.GEOMANCIA_CONFIG = {
 
      Antes de salir del navegador, cada evento pasa por un saneado que quita la
      pregunta, la interpretación, las claves, los tokens y los emails. */
-  SENTRY_DSN: '',
+  SENTRY_DSN: 'https://543f441eca45c19ed51107d0e0440dce@o4511794110922752.ingest.us.sentry.io/4511794159419392',
   SENTRY_ENTORNO: 'produccion',
 };
