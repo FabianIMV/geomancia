@@ -60,3 +60,6 @@ end;
 $$;
 
 revoke all on function public.registrar_consulta(uuid, int) from public, anon, authenticated;
+
+-- Nota: el límite diario se ajusta con la variable de entorno
+-- LIMITE_CONSULTAS_DIARIAS de la Edge Function (por defecto 40).
