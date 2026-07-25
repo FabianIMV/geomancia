@@ -912,7 +912,64 @@ function construirPrompt() {
 
 const TIMEOUT_GEMINI_MS = 20000;
 
+/* Pide la interpretación al proxy del servidor, donde vive la clave de Gemini.
+   Devuelve null si el proxy no está desplegado, para poder seguir con la clave
+   propia del navegador. */
+async function llamarProxyInterpretacion(prompt) {
+  const cliente = iniciarSupabase();
+  if (!cliente || !usuarioActual) return null;
+
+  const { url } = configSupabase();
+  let sesion;
+  try {
+    const res = await cliente.auth.getSession();
+    sesion = res && res.data && res.data.session;
+  } catch (err) {
+    return null;
+  }
+  if (!sesion || !sesion.access_token) return null;
+
+  let respuesta;
+  try {
+    respuesta = await fetch(url.replace(/\/$/, '') + '/functions/v1/interpretar', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer ' + sesion.access_token,
+      },
+      body: JSON.stringify({ prompt: prompt }),
+    });
+  } catch (err) {
+    // Sin red o función inalcanzable: que decida el camino con clave propia.
+    console.warn('No se pudo contactar el proxy de interpretación:', err);
+    return null;
+  }
+
+  // La función no existe todavía: se sigue con la clave del navegador.
+  if (respuesta.status === 404) return null;
+
+  const datos = await respuesta.json().catch(function () { return {}; });
+
+  if (!respuesta.ok) {
+    // El límite diario y la sesión vencida son respuestas legítimas del proxy:
+    // no se enmascaran cayendo a la clave propia.
+    if (respuesta.status === 429 || respuesta.status === 401) {
+      throw new Error(datos.error || 'El proxy rechazó la consulta.');
+    }
+    throw new Error(datos.error || ('El proxy respondió con estado ' + respuesta.status + '.'));
+  }
+
+  if (!datos.texto || !datos.texto.trim()) {
+    throw new Error('El proxy devolvió una interpretación vacía.');
+  }
+  return datos.texto;
+}
+
 async function llamarGemini(prompt) {
+  // Primero el proxy: así la clave no viaja al navegador.
+  const porProxy = await llamarProxyInterpretacion(prompt);
+  if (porProxy) return porProxy;
+
   const apiKey = getApiKey();
   if (!apiKey) {
     throw new Error('No hay clave de la API de Gemini configurada.');
