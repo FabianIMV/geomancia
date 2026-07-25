@@ -241,3 +241,19 @@ test.describe('Proxy de interpretación', () => {
     await expect(page.locator('#interpretacion-estado')).toContainText('límite de 40', { timeout: 60000 });
   });
 });
+
+test.describe('Mostrar/ocultar contraseña', () => {
+  test('permite ver el texto real escrito en el campo', async ({ page }) => {
+    await prepararApp(page);
+    await page.click('#btn-sesion');
+    await page.fill('#input-password', 'lo-que-escribi');
+
+    await expect(page.locator('#input-password')).toHaveAttribute('type', 'password');
+    await page.click('#btn-ver-password');
+    await expect(page.locator('#input-password')).toHaveAttribute('type', 'text');
+    await expect(page.locator('#input-password')).toHaveValue('lo-que-escribi');
+
+    await page.click('#btn-ver-password');
+    await expect(page.locator('#input-password')).toHaveAttribute('type', 'password');
+  });
+});

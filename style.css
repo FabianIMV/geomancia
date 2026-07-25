@@ -132,6 +132,24 @@ textarea:focus, select:focus, input:focus {
   outline-offset: 1px;
 }
 
+.fila-password {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+.fila-password input { flex: 1; }
+.btn-ver-password {
+  flex-shrink: 0;
+  background: var(--panel);
+  border: 1px solid var(--panel-borde);
+  color: var(--arena-suave);
+  border-radius: var(--radio);
+  padding: 0 0.9rem;
+  font-family: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
 .error {
   color: var(--desfavorable);
   font-size: 0.9rem;
