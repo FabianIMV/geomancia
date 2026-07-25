@@ -1,0 +1,73 @@
+name: Respaldo de la base
+
+# El plan gratuito de Supabase pausa los proyectos inactivos y no garantiza
+# backups. Esto guarda un volcado semanal en el propio repositorio.
+#
+# Si faltan los secretos, el job se salta en vez de fallar.
+on:
+  schedule:
+    - cron: "0 6 * * 1" # lunes a las 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  respaldar:
+    name: Volcado semanal
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: ¿Están los secretos?
+        id: secretos
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          PASS: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          if [ -n "$TOKEN" ] && [ -n "$REF" ] && [ -n "$PASS" ]; then
+            echo "listos=si" >> "$GITHUB_OUTPUT"
+          else
+            echo "listos=no" >> "$GITHUB_OUTPUT"
+            echo "::notice::Faltan secretos de Supabase; no se hace respaldo."
+          fi
+
+      - name: Instalar la CLI de Supabase
+        if: steps.secretos.outputs.listos == 'si'
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Enlazar el proyecto
+        if: steps.secretos.outputs.listos == 'si'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: supabase link --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}"
+
+      - name: Volcar los datos
+        if: steps.secretos.outputs.listos == 'si'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          mkdir -p respaldos
+          supabase db dump --data-only -f "respaldos/datos.sql"
+          supabase db dump -f "respaldos/esquema.sql"
+
+      - name: Commitear si cambió algo
+        if: steps.secretos.outputs.listos == 'si'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add respaldos/
+          if git diff --cached --quiet; then
+            echo "Sin cambios en los datos; no se commitea."
+          else
+            git commit -m "Respaldo automático de la base ($(date -u +%Y-%m-%d))"
+            git push
+          fi

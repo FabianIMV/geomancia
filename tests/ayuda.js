@@ -85,7 +85,11 @@ window.supabase = { createClient: function () {
       },
       signUp: function (o) { window.__entrar(o.email); return Promise.resolve({ data: { session: { user: usuario } }, error: null }); },
       signOut: function () { usuario = null; return Promise.resolve({}); },
-      getSession: function () { return Promise.resolve({ data: { session: usuario ? { user: usuario } : null } }); },
+      getSession: function () {
+        return Promise.resolve({
+          data: { session: usuario ? { user: usuario, access_token: 'token-de-prueba' } : null },
+        });
+      },
       onAuthStateChange: function (cb) { oyentes.push(cb); return { data: { subscription: {} } }; },
     },
     from: tabla,

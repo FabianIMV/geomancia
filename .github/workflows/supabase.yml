@@ -1,0 +1,74 @@
+name: Supabase
+
+# Aplica las migraciones y despliega la Edge Function del proxy.
+#
+# Se dispara solo cuando cambia algo de supabase/, y también a mano.
+# Si faltan los secretos, el job se salta en vez de fallar: así el repo sigue
+# verde para quien todavía no los cargó.
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "supabase/**"
+      - ".github/workflows/supabase.yml"
+  workflow_dispatch:
+
+jobs:
+  desplegar:
+    name: Migraciones y funciones
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: ¿Están los secretos?
+        id: secretos
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          if [ -n "$TOKEN" ] && [ -n "$REF" ]; then
+            echo "listos=si" >> "$GITHUB_OUTPUT"
+          else
+            echo "listos=no" >> "$GITHUB_OUTPUT"
+            echo "::notice::Faltan SUPABASE_ACCESS_TOKEN o SUPABASE_PROJECT_REF; no se despliega nada."
+          fi
+
+      - name: Instalar la CLI de Supabase
+        if: steps.secretos.outputs.listos == 'si'
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Enlazar el proyecto
+        if: steps.secretos.outputs.listos == 'si'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: supabase link --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}"
+
+      - name: Aplicar migraciones
+        if: steps.secretos.outputs.listos == 'si'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: supabase db push
+
+      - name: Cargar la clave de Gemini en la función
+        if: steps.secretos.outputs.listos == 'si' && env.GEMINI != ''
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          GEMINI: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          supabase secrets set GEMINI_API_KEY="$GEMINI" \
+            --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}"
+
+      - name: Desplegar la función interpretar
+        if: steps.secretos.outputs.listos == 'si'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase functions deploy interpretar \
+            --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}"

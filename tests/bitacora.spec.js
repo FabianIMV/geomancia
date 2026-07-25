@@ -186,3 +186,58 @@ test.describe('Bitácora', () => {
     expect(descarga[0].suggestedFilename()).toMatch(/^bitacora-geomancia-\d{4}-\d{2}-\d{2}\.json$/);
   });
 });
+
+test.describe('Proxy de interpretación', () => {
+  test('usa el proxy cuando está desplegado, sin exponer la clave', async ({ page }) => {
+    let recibidoPorProxy = null;
+    await page.route('**/functions/v1/interpretar', async (ruta) => {
+      const req = ruta.request();
+      recibidoPorProxy = {
+        autorizacion: req.headers()['authorization'] || '',
+        tienePrompt: !!JSON.parse(req.postData() || '{}').prompt,
+      };
+      await ruta.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ texto: '### Veredicto\nLo dijo el proxy.' }),
+      });
+    });
+    // Si el cliente llamara a Gemini directo, este stub lo delataría.
+    let llamoAGeminiDirecto = false;
+    await page.route('**generativelanguage.googleapis.com**', async (ruta) => {
+      llamoAGeminiDirecto = true;
+      await ruta.fulfill({ status: 200, contentType: 'application/json',
+        body: JSON.stringify({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: 'directo' }] } }] }) });
+    });
+
+    await prepararApp(page);
+    await iniciarSesion(page);
+    await consultar(page, '¿Pasa por el proxy?');
+    await expect(page.locator('#interpretacion-texto')).toContainText('Lo dijo el proxy', { timeout: 20000 });
+
+    expect(recibidoPorProxy, 'no se llamó al proxy').not.toBeNull();
+    expect(recibidoPorProxy.autorizacion).toContain('Bearer ');
+    expect(recibidoPorProxy.tienePrompt).toBe(true);
+    expect(llamoAGeminiDirecto, 'la clave del navegador no debería usarse').toBe(false);
+  });
+
+  test('si el proxy no está desplegado sigue con la clave propia', async ({ page }) => {
+    await page.route('**/functions/v1/interpretar', (ruta) => ruta.fulfill({ status: 404, body: '' }));
+    await prepararApp(page);
+    await iniciarSesion(page);
+    await consultar(page, '¿Cae a la clave propia?');
+    await expect(page.locator('#interpretacion-texto h4').first()).toBeVisible({ timeout: 20000 });
+  });
+
+  test('el límite diario se muestra tal cual, sin caer a la clave propia', async ({ page }) => {
+    test.setTimeout(90000); // la app reintenta tres veces antes de rendirse
+    await page.route('**/functions/v1/interpretar', (ruta) => ruta.fulfill({
+      status: 429, contentType: 'application/json',
+      body: JSON.stringify({ error: 'Llegaste al límite de 40 consultas por día. Vuelve mañana.', limite_alcanzado: true }),
+    }));
+    await prepararApp(page);
+    await iniciarSesion(page);
+    await consultar(page, '¿Respeta el límite?');
+    await expect(page.locator('#interpretacion-estado')).toContainText('límite de 40', { timeout: 60000 });
+  });
+});
