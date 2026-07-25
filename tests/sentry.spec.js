@@ -103,3 +103,27 @@ test.describe('Activación de Sentry', () => {
     expect(errores).toEqual([]);
   });
 });
+
+test.describe('Configuración real del repositorio', () => {
+  const fs = require('fs');
+
+  test('el DSN configurado está bien formado', () => {
+    const crudo = fs.readFileSync(path.join(__dirname, '..', 'config.js'), 'utf8');
+    const dsn = (crudo.match(/SENTRY_DSN:\s*'([^']*)'/) || [])[1] || '';
+    if (!dsn) {
+      // Sin DSN no hay monitoreo, pero es una configuración válida.
+      return;
+    }
+    // Un DSN mal escrito rompe Sentry en silencio; conviene que falle acá.
+    expect(dsn).toMatch(/^https:\/\/[0-9a-f]+@o\d+\.ingest\.[a-z0-9.]+sentry\.io\/\d+$/);
+  });
+
+  test('los fallos que la app atrapa se reportan explícitamente', () => {
+    const fuente = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
+    // Sentry solo captura errores no atrapados por su cuenta, y esta app atrapa
+    // casi todo: sin estas llamadas, los fallos que importan no llegarían.
+    expect(fuente).toContain("reportarError(ultimoError");
+    expect(fuente).toContain("'bitacora.guardar'");
+    expect(fuente).toContain("'bitacora.leer'");
+  });
+});

@@ -94,6 +94,28 @@ function limpiarEventoSentry(evento, contexto) {
   }
 }
 
+/* Reporta a Sentry un fallo que la app ya atrapó.
+
+   Hace falta explícitamente: Sentry solo captura por su cuenta los errores NO
+   atrapados, y esta app atrapa casi todo para poder mostrar mensajes claros.
+   Sin esto, justamente los fallos que interesan (que el oráculo no responda,
+   que no se guarde una consulta) no llegarían nunca.
+
+   El `contexto` es para diagnosticar —modelo, estado HTTP, intentos—, nunca
+   para datos de la consulta; y de todos modos el saneado de beforeSend vuelve
+   a pasar sobre el evento entero. */
+function reportarError(err, dondeOcurrio, contexto) {
+  if (typeof window === 'undefined' || !window.Sentry || !window.Sentry.captureException) return;
+  try {
+    window.Sentry.captureException(err, {
+      tags: { donde: dondeOcurrio },
+      extra: contexto || {},
+    });
+  } catch (fallo) {
+    console.warn('No se pudo reportar el error a Sentry:', fallo);
+  }
+}
+
 function iniciarSentry() {
   const cfg = (typeof window !== 'undefined' && window.GEOMANCIA_CONFIG) || {};
   const dsn = cfg.SENTRY_DSN || '';
@@ -281,6 +303,8 @@ async function guardarConsultaEnBitacora() {
   const { data, error } = await cliente.from('consultas').insert(fila).select('id').single();
   if (error) {
     console.error('No se pudo guardar la consulta en la bitácora:', error);
+    reportarError(new Error(error.message || 'Fallo al guardar en la bitácora'),
+      'bitacora.guardar', { codigo: error.code, detalle: error.details });
     return null;
   }
   return data && data.id;
@@ -296,6 +320,8 @@ async function listarConsultas() {
     .limit(100);
   if (error) {
     console.error('No se pudo leer la bitácora:', error);
+    reportarError(new Error(error.message || 'Fallo al leer la bitácora'),
+      'bitacora.leer', { codigo: error.code });
     throw new Error(error.message);
   }
   return data || [];
@@ -1343,6 +1369,13 @@ async function solicitarInterpretacion() {
 
   // Todos los intentos fallaron: NO se genera lectura de respaldo. Se muestra el
   // error y se deja reintentar. La interpretación queda vacía y no se exporta como válida.
+  reportarError(ultimoError || new Error('Sin interpretación tras todos los intentos'),
+    'interpretacion', {
+      intentos: MAX_INTENTOS_INTERPRETACION,
+      hubo_sesion: !!usuarioActual,
+      hubo_clave_propia: !!getApiKey(),
+    });
+
   estado.interpretacion = '';
   mostrarCargando(false);
   actualizarOfertaDeGuardado();
