@@ -154,6 +154,66 @@ function iniciarSentry() {
   }
 }
 
+function sentryConfigurado() {
+  const cfg = (typeof window !== 'undefined' && window.GEOMANCIA_CONFIG) || {};
+  return !!(cfg.SENTRY_DSN || '');
+}
+
+/* Muestra u oculta el botón de diagnóstico según haya DSN configurado. Se
+   revisa la presencia del DSN, no si window.Sentry ya cargó: el botón debe
+   estar visible incluso si el script todavía no llegó (o falló), porque esa
+   es justamente una de las cosas que el diagnóstico tiene que poder decir. */
+function actualizarUiSentry() {
+  const boton = document.getElementById('btn-probar-sentry');
+  if (!boton) return;
+  boton.hidden = !sentryConfigurado();
+}
+
+/* Prueba el circuito completo con la red en su estado normal (a diferencia de
+   forzar un fallo en modo avión, que hace que el propio reporte de error
+   intente salir sin conexión y se pierda: Sentry no reintenta indefinidamente
+   si la app se cierra antes de que vuelva la red).
+
+   Reporta en pantalla, paso a paso, dónde se cortó: si el script no cargó, si
+   Sentry.init no corrió, o si el evento no se pudo entregar al servidor. */
+async function probarSentry() {
+  const estadoEl = document.getElementById('estado-sentry');
+  const mostrar = function (texto) {
+    estadoEl.hidden = false;
+    estadoEl.textContent = texto;
+  };
+
+  mostrar('Probando…');
+
+  if (typeof window === 'undefined' || !window.Sentry) {
+    mostrar('⚠ El script de Sentry no cargó. Revisá la conexión, o si algo (un bloqueador de anuncios, modo privado) frena browser.sentry-cdn.com.');
+    return;
+  }
+  if (typeof window.Sentry.captureException !== 'function') {
+    mostrar('⚠ El script cargó pero no expone captureException: la versión del bundle no es la esperada.');
+    return;
+  }
+
+  try {
+    const idEvento = window.Sentry.captureException(
+      new Error('Prueba manual desde Geomancia — ' + new Date().toISOString())
+    );
+
+    const cliente = typeof window.Sentry.getClient === 'function' ? window.Sentry.getClient() : null;
+    if (cliente && typeof cliente.flush === 'function') {
+      const entregado = await cliente.flush(6000);
+      mostrar(entregado
+        ? '✓ Enviado (id ' + idEvento + '). Debería aparecer en Issues en unos segundos.'
+        : '⚠ Sentry no confirmó la entrega en 6s. Puede ser la red, o que el DSN no sea válido.');
+      return;
+    }
+
+    mostrar('Se generó el evento (id ' + idEvento + ') pero no se pudo confirmar el envío en este SDK.');
+  } catch (err) {
+    mostrar('⚠ Falló al intentar enviarlo: ' + err.message);
+  }
+}
+
 /* ==========================================================================
    SUPABASE: SESIÓN Y BITÁCORA PRIVADA
 
@@ -2304,6 +2364,8 @@ function reiniciarConsulta(mantenerPregunta) {
 
 function inicializar() {
   iniciarSentry();
+  actualizarUiSentry();
+  document.getElementById('btn-probar-sentry').addEventListener('click', probarSentry);
   poblarSelectTemas();
   inicializarSesion();
 

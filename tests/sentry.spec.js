@@ -127,3 +127,45 @@ test.describe('Configuración real del repositorio', () => {
     expect(fuente).toContain("'bitacora.leer'");
   });
 });
+
+test.describe('Botón de diagnóstico en la app', () => {
+  const DSN_PRUEBA = 'https://abc@o1.ingest.us.sentry.io/1';
+
+  test('no aparece si no hay DSN configurado', async ({ page }) => {
+    await prepararApp(page); // config.js de prueba no trae SENTRY_DSN
+    await expect(page.locator('#btn-probar-sentry')).toBeHidden();
+  });
+
+  test('reporta con precisión si el script de Sentry no cargó', async ({ page }) => {
+    await prepararApp(page, { supabase: false, sentryDsn: DSN_PRUEBA, sentryBundle: null });
+
+    await expect(page.locator('#btn-probar-sentry')).toBeVisible();
+    await page.click('#btn-probar-sentry');
+    await expect(page.locator('#estado-sentry')).toContainText('no cargó');
+  });
+
+  test('confirma la entrega cuando Sentry responde que se envió', async ({ page }) => {
+    const bundle = `window.Sentry = {
+      init: function () {},
+      captureException: function () { return 'evt-123'; },
+      getClient: function () { return { flush: function () { return Promise.resolve(true); } }; },
+    };`;
+    await prepararApp(page, { supabase: false, sentryDsn: DSN_PRUEBA, sentryBundle: bundle });
+
+    await page.click('#btn-probar-sentry');
+    await expect(page.locator('#estado-sentry')).toContainText('Enviado', { timeout: 8000 });
+    await expect(page.locator('#estado-sentry')).toContainText('evt-123');
+  });
+
+  test('avisa cuando Sentry no confirma la entrega a tiempo', async ({ page }) => {
+    const bundle = `window.Sentry = {
+      init: function () {},
+      captureException: function () { return 'evt-999'; },
+      getClient: function () { return { flush: function () { return Promise.resolve(false); } }; },
+    };`;
+    await prepararApp(page, { supabase: false, sentryDsn: DSN_PRUEBA, sentryBundle: bundle });
+
+    await page.click('#btn-probar-sentry');
+    await expect(page.locator('#estado-sentry')).toContainText('no confirmó la entrega', { timeout: 8000 });
+  });
+});

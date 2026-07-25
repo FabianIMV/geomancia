@@ -96,7 +96,7 @@ window.supabase = { createClient: function () {
   };
 } };`;
 
-async function stubSupabase(page, activo) {
+async function stubSupabase(page, activo, sentryDsn) {
   await page.route('**/supabase.min.js', function (ruta) {
     return ruta.fulfill({
       status: 200,
@@ -105,12 +105,14 @@ async function stubSupabase(page, activo) {
     });
   });
   await page.route('**/config.js', function (ruta) {
+    const base = activo === false
+      ? { SUPABASE_URL: '', SUPABASE_ANON_KEY: '' }
+      : { SUPABASE_URL: 'https://prueba.supabase.co', SUPABASE_ANON_KEY: 'anon-de-prueba' };
+    if (sentryDsn) base.SENTRY_DSN = sentryDsn;
     return ruta.fulfill({
       status: 200,
       contentType: 'application/javascript',
-      body: activo === false
-        ? 'window.GEOMANCIA_CONFIG = { SUPABASE_URL: "", SUPABASE_ANON_KEY: "" };'
-        : 'window.GEOMANCIA_CONFIG = { SUPABASE_URL: "https://prueba.supabase.co", SUPABASE_ANON_KEY: "anon-de-prueba" };',
+      body: 'window.GEOMANCIA_CONFIG = ' + JSON.stringify(base) + ';',
     });
   });
 }
@@ -119,7 +121,14 @@ async function stubSupabase(page, activo) {
 async function prepararApp(page, opciones) {
   opciones = opciones || {};
   await stubGemini(page, opciones.gemini);
-  await stubSupabase(page, opciones.supabase);
+  await stubSupabase(page, opciones.supabase, opciones.sentryDsn);
+  if (opciones.sentryBundle) {
+    await page.route('**/bundle.min.js', function (ruta) {
+      return ruta.fulfill({ status: 200, contentType: 'application/javascript', body: opciones.sentryBundle });
+    });
+  } else if (opciones.sentryBundle === null) {
+    await page.route('**/bundle.min.js', function (ruta) { return ruta.abort(); });
+  }
   await page.addInitScript(function () {
     localStorage.setItem('geomancia_gemini_api_key', 'CLAVE-DE-PRUEBA');
   });
