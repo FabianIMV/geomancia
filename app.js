@@ -39,6 +39,100 @@ function borrarApiKey() {
 }
 
 /* ==========================================================================
+   SENTRY: MONITOREO DE ERRORES
+
+   Opcional: sin SENTRY_DSN en config.js no se activa nada.
+
+   El punto delicado es la privacidad. Las preguntas de una consulta son datos
+   íntimos, y por defecto Sentry captura mucho contexto: registros de consola,
+   URLs de las peticiones (¡la de Gemini lleva la clave en la query!) y los
+   textos de los errores, que en esta app pueden incluir la interpretación.
+   Por eso todo pasa por un saneado antes de salir del navegador.
+   ========================================================================== */
+
+// Patrones que nunca deben salir del dispositivo.
+const PATRONES_SENSIBLES = [
+  { re: /([?&]key=)[^&\s"']+/gi, por: '$1[CLAVE]' },          // clave en la URL de Gemini
+  { re: /AIza[0-9A-Za-z_\-]{10,}/g, por: '[CLAVE-GOOGLE]' },   // claves de Google
+  { re: /eyJ[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+/g, por: '[TOKEN]' }, // JWT
+  { re: /[\w.+-]+@[\w-]+\.[\w.]+/g, por: '[EMAIL]' },
+];
+
+/* Quita de un texto las claves, los tokens, los emails y —lo más importante—
+   la pregunta y la interpretación de la consulta en curso. */
+function limpiarDatosSensibles(texto, contexto) {
+  if (typeof texto !== 'string' || !texto) return texto;
+  let salida = texto;
+
+  const propios = contexto || {};
+  // La pregunta y la interpretación se reemplazan primero, tal cual están.
+  [
+    { valor: propios.pregunta, etiqueta: '[PREGUNTA]' },
+    { valor: propios.interpretacion, etiqueta: '[INTERPRETACION]' },
+  ].forEach(function (dato) {
+    if (dato.valor && dato.valor.length > 8) {
+      salida = salida.split(dato.valor).join(dato.etiqueta);
+    }
+  });
+
+  PATRONES_SENSIBLES.forEach(function (p) {
+    salida = salida.replace(p.re, p.por);
+  });
+  return salida;
+}
+
+// Sanea el evento entero recorriéndolo serializado: es contundente y no deja
+// campos sin revisar por haberlos pasado por alto.
+function limpiarEventoSentry(evento, contexto) {
+  try {
+    const crudo = JSON.stringify(evento);
+    const limpio = limpiarDatosSensibles(crudo, contexto);
+    return JSON.parse(limpio);
+  } catch (err) {
+    // Ante la duda, no se manda nada.
+    return null;
+  }
+}
+
+function iniciarSentry() {
+  const cfg = (typeof window !== 'undefined' && window.GEOMANCIA_CONFIG) || {};
+  const dsn = cfg.SENTRY_DSN || '';
+  if (!dsn || typeof window === 'undefined' || !window.Sentry) return;
+
+  try {
+    window.Sentry.init({
+      dsn: dsn,
+      environment: cfg.SENTRY_ENTORNO || 'produccion',
+      // Nada de datos personales automáticos, ni grabación de sesión.
+      sendDefaultPii: false,
+      // Solo errores: no se instrumenta rendimiento ni se graba la pantalla.
+      tracesSampleRate: 0,
+      replaysSessionSampleRate: 0,
+      replaysOnErrorSampleRate: 0,
+
+      beforeBreadcrumb: function (rastro) {
+        // Los console.error de esta app llegan a incluir la respuesta completa
+        // del modelo, o sea la interpretación: se descartan por completo.
+        if (rastro.category === 'console') return null;
+        if (rastro.data && rastro.data.url) {
+          rastro.data.url = limpiarDatosSensibles(rastro.data.url, {});
+        }
+        return rastro;
+      },
+
+      beforeSend: function (evento) {
+        return limpiarEventoSentry(evento, {
+          pregunta: (typeof estado !== 'undefined' && estado.pregunta) || '',
+          interpretacion: (typeof estado !== 'undefined' && estado.interpretacion) || '',
+        });
+      },
+    });
+  } catch (err) {
+    console.warn('No se pudo iniciar Sentry:', err);
+  }
+}
+
+/* ==========================================================================
    SUPABASE: SESIÓN Y BITÁCORA PRIVADA
 
    Todo este módulo es opcional. Si config.js no tiene URL y clave, la app
@@ -2176,6 +2270,7 @@ function reiniciarConsulta(mantenerPregunta) {
    ========================================================================== */
 
 function inicializar() {
+  iniciarSentry();
   poblarSelectTemas();
   inicializarSesion();
 
@@ -2309,5 +2404,7 @@ if (typeof module !== 'undefined' && module.exports) {
     transponerHijas: transponerHijas,
     calcularEscudo: calcularEscudo,
     figurasAlucinadas: figurasAlucinadas,
+    limpiarDatosSensibles: limpiarDatosSensibles,
+    limpiarEventoSentry: limpiarEventoSentry,
   };
 }
