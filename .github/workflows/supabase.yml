@@ -21,7 +21,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: ¿Están los secretos?
         id: secretos
@@ -38,7 +38,7 @@ jobs:
 
       - name: Instalar la CLI de Supabase
         if: steps.secretos.outputs.listos == 'si'
-        uses: supabase/setup-cli@v1
+        uses: supabase/setup-cli@v3
         with:
           version: latest
 
