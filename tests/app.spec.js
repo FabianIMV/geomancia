@@ -153,3 +153,25 @@ test.describe('Sin bitácora configurada', () => {
     expect(errores).toEqual([]);
   });
 });
+
+test.describe('Escribir la pregunta', () => {
+  test('permite un párrafo largo y muestra el contador de caracteres', async ({ page }) => {
+    await prepararApp(page);
+    await page.click('#btn-comenzar');
+
+    const parrafoLargo = 'Necesito contarte con detalle mi situación laboral actual para que la '.repeat(6);
+    expect(parrafoLargo.length).toBeGreaterThan(300); // más que el límite viejo
+
+    await page.fill('#input-pregunta', parrafoLargo);
+    await expect(page.locator('#input-pregunta')).toHaveValue(parrafoLargo);
+    await expect(page.locator('#contador-pregunta')).toHaveText(parrafoLargo.length + ' / 1000');
+  });
+
+  test('el contador se resetea al limpiar la pregunta entre consultas', async ({ page }) => {
+    await prepararApp(page);
+    await consultar(page, 'una pregunta cualquiera');
+    await page.click('#btn-nueva-consulta');
+    await page.click('#btn-comenzar');
+    await expect(page.locator('#contador-pregunta')).toHaveText('0 / 1000');
+  });
+});

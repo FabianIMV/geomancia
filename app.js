@@ -2329,6 +2329,14 @@ function crearFormularioVerificacion(consulta) {
    REINICIO DE CONSULTA
    ========================================================================== */
 
+// Se llama cada vez que cambia el texto (al escribir o al limpiarlo a mano).
+function actualizarContadorPregunta() {
+  const input = document.getElementById('input-pregunta');
+  const contador = document.getElementById('contador-pregunta');
+  if (!input || !contador) return;
+  contador.textContent = input.value.length + ' / ' + input.maxLength;
+}
+
 /* Entra a la pantalla de pregunta limpiando el textarea si la pregunta anterior
    ya se usó en una tirada. Si el usuario solo fue y volvió sin consultar, se
    conserva lo que estaba escribiendo. */
@@ -2337,6 +2345,7 @@ function irAPantallaPregunta() {
     estado.pregunta = '';
     estado.preguntaConsumida = false;
     document.getElementById('input-pregunta').value = '';
+    actualizarContadorPregunta();
   }
   document.getElementById('error-pregunta').hidden = true;
   mostrarPantalla('pantalla-pregunta');
@@ -2347,6 +2356,7 @@ function reiniciarConsulta(mantenerPregunta) {
     estado.pregunta = '';
     estado.preguntaConsumida = false;
     document.getElementById('input-pregunta').value = '';
+    actualizarContadorPregunta();
   }
   estado.lineas = [];
   estado.escudo = null;
@@ -2368,6 +2378,10 @@ function inicializar() {
   document.getElementById('btn-probar-sentry').addEventListener('click', probarSentry);
   poblarSelectTemas();
   inicializarSesion();
+
+  const inputPregunta = document.getElementById('input-pregunta');
+  inputPregunta.addEventListener('input', actualizarContadorPregunta);
+  actualizarContadorPregunta();
 
   document.getElementById('btn-sesion').addEventListener('click', function () {
     document.getElementById('error-email').hidden = true;
@@ -2480,7 +2494,10 @@ if (typeof document !== 'undefined') {
   // Si no hay una consulta en curso, se limpia para no arrastrar la pregunta anterior.
   window.addEventListener('pageshow', function () {
     const input = document.getElementById('input-pregunta');
-    if (input && !estado.pregunta) input.value = '';
+    if (input && !estado.pregunta) {
+      input.value = '';
+      actualizarContadorPregunta();
+    }
   });
 }
 
