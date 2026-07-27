@@ -1032,7 +1032,14 @@ const INSTRUCCIONES_SISTEMA =
   '3. Considera la naturaleza de cada figura EN CONTEXTO (esto es guía para TU razonamiento interno, no para citar figuras ajenas a la tirada): Amissio es mala para retener pero buena para soltar deudas o enfermedades; Fortuna Minor favorece lo rápido y Fortuna Major lo lento; Puer y Rubeus advierten impulsividad; Populus refleja, no decide. Si en el texto necesitas contrastar, describe la CUALIDAD (p. ej. "favorece lo rápido más que lo sostenido") sin nombrar una figura que no esté en esta tirada.\n' +
   '4. Responde la pregunta concreta que se hizo. La geomancia contesta \'¿resultará X?\' con sí matizado, no matizado, o sí/no condicionado. Comprométete con un veredicto (sí matizado / no matizado / condicionado) y su condición, pero NO uses lenguaje de garantía ni certeza sobre eventos futuros: evita \'garantiza\', \'asegura\', \'está garantizado\', \'altamente probable\'. La geomancia juzga la tendencia y la condición del asunto, no certifica resultados.\n' +
   '5. Si la pregunta es sobre un tercero o busca certeza absoluta sobre el futuro, da el veredicto simbólico pero reencuadra el consejo hacia lo que el consultante puede hacer u observar.\n' +
-  '6. Español claro y legible, denso pero no enredado. Usa **negritas** en lo clave. Sin relleno místico decorativo. Estructura: Veredicto del Juez → camino (Testigos) → detalle de la casa del tema → estado del consultante (casa 1) → Reconciliador → condición o consejo accionable → síntesis en una frase.\n' +
+  '6. ESTRUCTURA OBLIGATORIA. La respuesta ARRANCA SIEMPRE con esta sección, antes que cualquier otra cosa:\n' +
+  '   "## Respuesta directa", y debajo:\n' +
+  '   (a) Una línea en negrita que abra con el veredicto en palabras corrientes: **Sí**, **Sí, pero…**, **No**, **No, salvo que…** o **Depende de…**\n' +
+  '   (b) Dos o tres frases que expliquen ese veredicto SIN UN SOLO nombre de figura geomántica y SIN los términos Juez, Testigo, Sobrina, Madre, Hija, Reconciliador, escudo ni número de casa. Escríbelas como se lo explicarías a alguien que no sabe nada de geomancia y solo quiere saber a qué atenerse.\n' +
+  '   (c) Si el veredicto lleva condición, una línea "**Lo que lo define:** …" también en lenguaje llano y accionable.\n' +
+  '   Recién DESPUÉS de esa sección viene la lectura técnica, bajo el título "## La lectura", con este orden: Juez → camino (Testigos) → casa del tema → estado del consultante (casa 1) → Reconciliador → consejo accionable → síntesis en una frase.\n' +
+  '   La sección "## Respuesta directa" y la sección "## La lectura" no pueden contradecirse.\n' +
+  '6bis. LENGUAJE EN LA PARTE TÉCNICA. La primera vez que aparezca un término del arte o el nombre de una figura, agrega una glosa brevísima entre paréntesis: por ejemplo "el Juez (la sentencia general del asunto)" o "Tristitia (peso y restricción)". No repitas la glosa las veces siguientes. Español claro y legible, denso pero no enredado. Usa **negritas** en lo clave. Sin relleno místico decorativo.\n' +
   '7. Si la pregunta involucra daño a terceros, salud grave o decisiones legales/financieras mayores, da el veredicto simbólico pero recuerda que esto no sustituye consejo profesional.\n' +
   '8. COBERTURA OBLIGATORIA: antes de la síntesis final cubre explícitamente el Juez, AMBOS Testigos, la figura de la casa del tema, la figura de casa 1 y el Reconciliador. Menciona las Sobrinas o las Madres cuando aporten información relevante, sobre todo si repiten una figura o contradicen al Juez.\n' +
   '9. Cuando dos posiciones muestran la MISMA figura (por ejemplo ambos Testigos iguales, o una figura que se repite entre Madres, Hijas o Sobrinas), eso es significativo en geomancia: señálalo y explica qué refuerza o insiste, en lugar de describir la figura dos veces con el mismo texto.\n' +
@@ -1088,6 +1095,101 @@ function construirPrompt() {
     '--- FIGURA EN CASA 1 (el consultante) ---\n' + figuraCasa1 + '\n\n' +
     'Redacta la interpretación siguiendo exactamente la jerarquía y estructura indicadas en las reglas. ' +
     'Recuerda: solo puedes nombrar figuras que aparezcan literalmente en los datos de arriba.';
+}
+
+/* ==========================================================================
+   PRE-CONSULTA: REVISIÓN DE LA PREGUNTA
+
+   La geomancia responde bien a ciertas preguntas y mal a otras. Antes de
+   levantar el escudo se le puede pedir al modelo que juzgue si la pregunta
+   está bien planteada, la reformule si conviene, y sugiera a qué casa
+   corresponde el asunto.
+   ========================================================================== */
+
+function construirPromptRevision(pregunta) {
+  const temas = TEMAS.map(function (t) {
+    return '- ' + t.id + ': ' + t.etiqueta + (t.casa ? ' (casa ' + t.casa + ')' : ' (sin casa: solo el Juez)');
+  }).join('\n');
+
+  return 'Eres un geomante hermético clásico ayudando a formular bien una consulta ANTES de levantar el escudo.\n\n' +
+    'La geomancia occidental responde BIEN a preguntas concretas sobre asuntos externos y verificables: ' +
+    'si algo resultará, si conviene hacer algo, hacia dónde se inclina un asunto, cómo se presenta una gestión, dónde está algo perdido.\n\n' +
+    'Responde MAL a: preguntas abiertas sin objeto ("qué me depara la vida"), pedidos de fecha o plazo exacto ' +
+    '(este sistema no calcula tiempos), preguntas sobre lo que otro piensa o siente por dentro, dilemas puramente morales, ' +
+    'preguntas de sí/no sin un asunto concreto detrás, y varias preguntas mezcladas en una sola.\n\n' +
+    'Temas disponibles, con su casa:\n' + temas + '\n\n' +
+    'Pregunta del consultante:\n"""\n' + pregunta + '\n"""\n\n' +
+    'Devuelve EXCLUSIVAMENTE un objeto JSON válido, sin texto alrededor y sin bloques de código, con esta forma:\n' +
+    '{\n' +
+    '  "apta": true o false,\n' +
+    '  "motivo": "una o dos frases explicando por qué sirve tal cual, o qué la vuelve difícil de juzgar",\n' +
+    '  "reformulada": "la pregunta reescrita para que la geomancia pueda juzgarla, conservando la intención real del consultante; null si ya está bien",\n' +
+    '  "tema_id": "el id del tema que mejor corresponde, de la lista de arriba",\n' +
+    '  "motivo_tema": "una frase de por qué esa casa"\n' +
+    '}\n\n' +
+    'Si la pregunta pide una fecha o un plazo, marca apta como false y reformúlala hacia la tendencia o la condición del asunto.\n' +
+    'La reformulación mantiene lo que la persona realmente quiere saber: no la conviertas en otra consulta.\n' +
+    'Escribe en español.';
+}
+
+/* Los modelos suelen envolver el JSON en ```json … ``` o agregar texto antes.
+   Se extrae el primer objeto equilibrado en vez de confiar en el formato. */
+function extraerJson(texto) {
+  if (typeof texto !== 'string') return null;
+  const sinCercas = texto.replace(/```(?:json)?/gi, '');
+  const inicio = sinCercas.indexOf('{');
+  if (inicio === -1) return null;
+
+  let profundidad = 0;
+  let enCadena = false;
+  let escapado = false;
+
+  for (let i = inicio; i < sinCercas.length; i++) {
+    const c = sinCercas[i];
+    if (enCadena) {
+      if (escapado) escapado = false;
+      else if (c === '\\') escapado = true;
+      else if (c === '"') enCadena = false;
+      continue;
+    }
+    if (c === '"') enCadena = true;
+    else if (c === '{') profundidad++;
+    else if (c === '}') {
+      profundidad--;
+      if (profundidad === 0) {
+        try {
+          return JSON.parse(sinCercas.slice(inicio, i + 1));
+        } catch (err) {
+          return null;
+        }
+      }
+    }
+  }
+  return null;
+}
+
+/* Normaliza lo que devuelve el modelo: nunca se confía en que respete el
+   schema. Un tema inventado o una reformulación vacía no deben romper la UI. */
+function normalizarRevision(crudo) {
+  if (!crudo || typeof crudo !== 'object') return null;
+
+  const tema = TEMAS.find(function (t) { return t.id === crudo.tema_id; }) || null;
+  const reformulada = typeof crudo.reformulada === 'string' ? crudo.reformulada.trim() : '';
+
+  return {
+    apta: crudo.apta === true,
+    motivo: typeof crudo.motivo === 'string' ? crudo.motivo.trim() : '',
+    reformulada: reformulada || null,
+    tema: tema,
+    motivoTema: typeof crudo.motivo_tema === 'string' ? crudo.motivo_tema.trim() : '',
+  };
+}
+
+async function revisarPregunta(pregunta) {
+  const texto = await llamarGemini(construirPromptRevision(pregunta));
+  const revision = normalizarRevision(extraerJson(texto));
+  if (!revision) throw new Error('El oráculo no devolvió una revisión legible.');
+  return revision;
 }
 
 const TIMEOUT_GEMINI_MS = 20000;
@@ -2330,6 +2432,127 @@ function crearFormularioVerificacion(consulta) {
    ========================================================================== */
 
 // Se llama cada vez que cambia el texto (al escribir o al limpiarlo a mano).
+/* ==========================================================================
+   UI DE LA REVISIÓN DE LA PREGUNTA
+   ========================================================================== */
+
+function ocultarPanelRevision() {
+  const panel = document.getElementById('panel-revision');
+  if (panel) {
+    panel.hidden = true;
+    panel.innerHTML = '';
+  }
+}
+
+function crearBotonAplicar(texto, alAplicar) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'btn btn-secundario';
+  btn.textContent = texto;
+  btn.addEventListener('click', function () {
+    alAplicar();
+    btn.disabled = true;
+    btn.textContent = 'Aplicado ✓';
+  });
+  return btn;
+}
+
+function mostrarPanelRevision(revision) {
+  const panel = document.getElementById('panel-revision');
+  panel.innerHTML = '';
+  panel.hidden = false;
+
+  const titulo = document.createElement('p');
+  titulo.className = 'revision-titulo ' + (revision.apta ? 'apta' : 'reformular');
+  titulo.textContent = revision.apta
+    ? '✓ La pregunta sirve tal como está'
+    : '⚠ Conviene reformularla';
+  panel.appendChild(titulo);
+
+  if (revision.motivo) {
+    const motivo = document.createElement('p');
+    motivo.className = 'revision-motivo';
+    motivo.textContent = revision.motivo;
+    panel.appendChild(motivo);
+  }
+
+  // Reformulación sugerida: se ofrece, nunca se aplica sola.
+  if (revision.reformulada && revision.reformulada !== document.getElementById('input-pregunta').value.trim()) {
+    const etiqueta = document.createElement('p');
+    etiqueta.className = 'revision-etiqueta';
+    etiqueta.textContent = 'Pregunta sugerida';
+    panel.appendChild(etiqueta);
+
+    const sugerida = document.createElement('blockquote');
+    sugerida.className = 'revision-sugerida';
+    sugerida.textContent = revision.reformulada;
+    panel.appendChild(sugerida);
+
+    panel.appendChild(crearBotonAplicar('Usar esta pregunta', function () {
+      const input = document.getElementById('input-pregunta');
+      input.value = revision.reformulada;
+      actualizarContadorPregunta();
+    }));
+  }
+
+  // Tema sugerido, solo si difiere del elegido.
+  const select = document.getElementById('select-tema');
+  if (revision.tema && revision.tema.id !== select.value) {
+    const etiquetaTema = document.createElement('p');
+    etiquetaTema.className = 'revision-etiqueta';
+    etiquetaTema.textContent = 'Tema sugerido';
+    panel.appendChild(etiquetaTema);
+
+    const tema = document.createElement('p');
+    tema.className = 'revision-motivo';
+    tema.textContent = revision.tema.etiqueta +
+      (revision.tema.casa ? ' (casa ' + revision.tema.casa + ')' : '') +
+      (revision.motivoTema ? ' — ' + revision.motivoTema : '');
+    panel.appendChild(tema);
+
+    panel.appendChild(crearBotonAplicar('Usar este tema', function () {
+      select.value = revision.tema.id;
+    }));
+  }
+}
+
+async function revisarPreguntaDesdeFormulario() {
+  const input = document.getElementById('input-pregunta');
+  const errorEl = document.getElementById('error-pregunta');
+  const boton = document.getElementById('btn-revisar-pregunta');
+  const texto = input.value.trim();
+
+  if (!texto) {
+    errorEl.textContent = 'Escribe una pregunta antes de revisarla.';
+    errorEl.hidden = false;
+    return;
+  }
+  errorEl.hidden = true;
+  ocultarPanelRevision();
+
+  boton.disabled = true;
+  boton.textContent = 'Consultando…';
+  try {
+    const revision = await revisarPregunta(texto);
+    mostrarPanelRevision(revision);
+  } catch (err) {
+    console.error('No se pudo revisar la pregunta:', err);
+    reportarError(err, 'revision-pregunta', {});
+    const panel = document.getElementById('panel-revision');
+    panel.hidden = false;
+    panel.innerHTML = '';
+    const aviso = document.createElement('p');
+    aviso.className = 'revision-motivo';
+    // La revisión es opcional: si falla, la consulta puede seguir igual.
+    aviso.textContent = 'No se pudo revisar la pregunta (' + err.message +
+      '). Podés tirar igual con la pregunta tal como está.';
+    panel.appendChild(aviso);
+  } finally {
+    boton.disabled = false;
+    boton.textContent = 'Revisar mi pregunta antes de tirar';
+  }
+}
+
 function actualizarContadorPregunta() {
   const input = document.getElementById('input-pregunta');
   const contador = document.getElementById('contador-pregunta');
@@ -2346,6 +2569,8 @@ function irAPantallaPregunta() {
     estado.preguntaConsumida = false;
     document.getElementById('input-pregunta').value = '';
     actualizarContadorPregunta();
+    // La revisión anterior ya no aplica a una pregunta nueva.
+    ocultarPanelRevision();
   }
   document.getElementById('error-pregunta').hidden = true;
   mostrarPantalla('pantalla-pregunta');
@@ -2357,6 +2582,7 @@ function reiniciarConsulta(mantenerPregunta) {
     estado.preguntaConsumida = false;
     document.getElementById('input-pregunta').value = '';
     actualizarContadorPregunta();
+    ocultarPanelRevision();
   }
   estado.lineas = [];
   estado.escudo = null;
@@ -2381,6 +2607,7 @@ function inicializar() {
 
   const inputPregunta = document.getElementById('input-pregunta');
   inputPregunta.addEventListener('input', actualizarContadorPregunta);
+  document.getElementById('btn-revisar-pregunta').addEventListener('click', revisarPreguntaDesdeFormulario);
   actualizarContadorPregunta();
 
   document.getElementById('btn-sesion').addEventListener('click', function () {
@@ -2518,5 +2745,7 @@ if (typeof module !== 'undefined' && module.exports) {
     figurasAlucinadas: figurasAlucinadas,
     limpiarDatosSensibles: limpiarDatosSensibles,
     limpiarEventoSentry: limpiarEventoSentry,
+    extraerJson: extraerJson,
+    normalizarRevision: normalizarRevision,
   };
 }
