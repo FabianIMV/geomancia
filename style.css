@@ -150,6 +150,13 @@ textarea:focus, select:focus, input:focus {
   cursor: pointer;
 }
 
+.contador-caracteres {
+  text-align: right;
+  color: var(--arena-suave);
+  font-size: 0.78rem;
+  margin: 0.3rem 0 0;
+}
+
 .error {
   color: var(--desfavorable);
   font-size: 0.9rem;
