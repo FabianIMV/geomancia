@@ -10,13 +10,16 @@
    - Solo se toca lo propio (mismo origen) y solo peticiones GET. Las llamadas
      a Gemini y a Supabase pasan de largo: nunca se cachean ni se interceptan,
      porque son datos vivos y privados.
-   - Para el HTML: red primero, caché como respaldo. Así un despliegue nuevo se
-     ve al instante mientras haya señal, y sin señal se abre la última copia.
-   - Para CSS/JS/íconos: se responde con la caché y se revalida en segundo
-     plano, de modo que la app abre rápido y se actualiza para la próxima vez.
+   - Red primero para TODO lo propio, con la caché como respaldo sin conexión.
+
+   Antes el HTML iba por red y el JS/CSS por caché con revalidación. Eso servía
+   una versión mezclada en cada despliegue: HTML nuevo con JavaScript viejo, con
+   botones que existían en la página pero cuyo manejador todavía no estaba
+   cargado. La consistencia entre archivos importa más que ahorrar unos
+   milisegundos en un sitio de este tamaño.
    ========================================================================== */
 
-const VERSION = 'geomancia-v1';
+const VERSION = 'geomancia-v2';
 
 // Rutas relativas al alcance del service worker, para que funcione tanto en la
 // raíz del dominio como en un subdirectorio de GitHub Pages.
@@ -79,40 +82,26 @@ self.addEventListener('fetch', function (evento) {
   // Todo lo externo (Gemini, Supabase, el CDN) va directo a la red.
   if (url.origin !== self.location.origin) return;
 
-  // Navegación / HTML: red primero.
   const esNavegacion = peticion.mode === 'navigate' ||
     (peticion.headers.get('accept') || '').indexOf('text/html') !== -1;
 
-  if (esNavegacion) {
-    evento.respondWith(
-      fetch(peticion)
-        .then(function (respuesta) {
+  // Red primero para todo lo propio: la página y su JavaScript tienen que venir
+  // siempre de la misma versión. La caché queda solo como respaldo sin conexión.
+  evento.respondWith(
+    fetch(peticion)
+      .then(function (respuesta) {
+        if (respuesta && respuesta.status === 200 && respuesta.type === 'basic') {
           const copia = respuesta.clone();
           caches.open(VERSION).then(function (cache) { cache.put(peticion, copia); });
-          return respuesta;
-        })
-        .catch(function () {
-          return caches.match(peticion).then(function (guardada) {
-            return guardada || caches.match('./index.html');
-          });
-        })
-    );
-    return;
-  }
-
-  // Recursos estáticos: caché y revalidación en segundo plano.
-  evento.respondWith(
-    caches.match(peticion).then(function (guardada) {
-      const desdeRed = fetch(peticion)
-        .then(function (respuesta) {
-          if (respuesta && respuesta.status === 200 && respuesta.type === 'basic') {
-            const copia = respuesta.clone();
-            caches.open(VERSION).then(function (cache) { cache.put(peticion, copia); });
-          }
-          return respuesta;
-        })
-        .catch(function () { return guardada; });
-      return guardada || desdeRed;
-    })
+        }
+        return respuesta;
+      })
+      .catch(function () {
+        return caches.match(peticion).then(function (guardada) {
+          if (guardada) return guardada;
+          // Una navegación sin copia exacta cae al index cacheado.
+          return esNavegacion ? caches.match('./index.html') : undefined;
+        });
+      })
   );
 });
