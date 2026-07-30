@@ -1,0 +1,108 @@
+name: Avisar fallas del pipeline
+
+# salud.yml ya cubre sus propios chequeos con su propio issue. Esto es para
+# el resto: si Verificaciones, el Deploy, el Respaldo o Supabase fallan en
+# main, abre (o comenta) un issue en vez de quedar solo en la pestaña Actions.
+#
+# Se filtra a head_branch == 'main' a propósito: una corrida de Verificaciones
+# en una rama o PR ya se ve en el propio PR, no hace falta un issue aparte.
+on:
+  workflow_run:
+    workflows:
+      - "Verificaciones"
+      - "Deploy a GitHub Pages"
+      - "Respaldo de la base"
+      - "Supabase"
+    types:
+      - completed
+
+permissions:
+  issues: write
+
+jobs:
+  avisar:
+    name: Abrir issue si falló
+    if: >
+      github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Abrir o comentar el issue
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+            const marca = `<!-- fallo-pipeline:${run.name} -->`;
+            const cuerpo = [
+              marca,
+              `## Falló el workflow "${run.name}" en main`,
+              '',
+              `Corrida: ${run.html_url}`,
+              '',
+              'Este issue se cierra solo cuando ese workflow vuelva a pasar en main.',
+            ].join('\n');
+
+            // Una sola conversación abierta por workflow: si ya hay un issue
+            // de esta falla, se comenta ahí en vez de acumular issues.
+            const abiertos = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'pipeline',
+            });
+            const existente = abiertos.data.find((i) => i.body && i.body.includes(marca));
+
+            if (existente) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existente.number,
+                body: cuerpo,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `Falló el workflow "${run.name}"`,
+                body: cuerpo,
+                labels: ['pipeline'],
+              });
+            }
+
+  cerrar:
+    name: Cerrar issue si volvió a pasar
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Cerrar el issue de esta falla, si existe
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+            const marca = `<!-- fallo-pipeline:${run.name} -->`;
+
+            const abiertos = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'pipeline',
+            });
+            for (const issue of abiertos.data) {
+              if (!issue.body || !issue.body.includes(marca)) continue;
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: `"${run.name}" volvió a pasar en main: todo en orden. Se cierra solo.`,
+              });
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: 'closed',
+              });
+            }
