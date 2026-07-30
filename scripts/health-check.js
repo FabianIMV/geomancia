@@ -140,7 +140,10 @@ async function principal() {
     .map(function (r) { return (r.ok ? '- ✅ ' : '- ❌ ') + r.nombre + ': ' + r.detalle; })
     .join('\n');
   try {
-    fs.writeFileSync(path.join(__dirname, '..', 'informe-salud.txt'), informe);
+    // El salto final no es cosmético: el workflow vuelca este archivo en un
+    // bloque delimitado de GITHUB_OUTPUT, y sin él el delimitador de cierre
+    // queda pegado a la última línea y Actions rechaza todo el bloque.
+    fs.writeFileSync(path.join(__dirname, '..', 'informe-salud.txt'), informe + '\n');
   } catch (err) {
     console.error('No se pudo escribir el informe:', err.message);
   }
