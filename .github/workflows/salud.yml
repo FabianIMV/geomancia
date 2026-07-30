@@ -27,8 +27,12 @@ jobs:
         with:
           node-version: "20"
 
+      # continue-on-error: un chequeo en rojo no debe cortar el job, porque los
+      # pasos que abren el issue vienen después. El resultado real se refleja
+      # al final, en "Reflejar el resultado del chequeo".
       - name: Chequear
         id: chequeo
+        continue-on-error: true
         env:
           URL_SITIO: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
         run: node scripts/health-check.js
@@ -38,25 +42,47 @@ jobs:
         id: informe
         run: |
           if [ -f informe-salud.txt ]; then
-            {
-              echo 'texto<<FIN'
-              cat informe-salud.txt
-              echo 'FIN'
-            } >> "$GITHUB_OUTPUT"
+            texto="$(cat informe-salud.txt)"
           else
-            echo 'texto=El chequeo no llegó a generar informe.' >> "$GITHUB_OUTPUT"
+            texto="El chequeo no llegó a generar informe; hay que mirar el log de la corrida."
           fi
 
+          # El delimitador se arma al vuelo para que no pueda aparecer dentro
+          # del informe, y printf garantiza que quede solo en su línea: $(...)
+          # ya comió los saltos finales, tenga o no el archivo salto propio.
+          # Con un "cat" pelado, un archivo sin salto final pega el
+          # delimitador a la última línea y Actions rechaza el bloque entero.
+          delim="FIN_$(date +%s%N)_${RANDOM}"
+          printf 'texto<<%s\n%s\n%s\n' "$delim" "$texto" "$delim" >> "$GITHUB_OUTPUT"
+
+      # Se abre issue tanto si los chequeos encontraron algo como si el propio
+      # workflow se rompió: un job en rojo sin aviso es justo lo que hay que
+      # evitar. failure() acá solo puede venir de otro paso, porque el chequeo
+      # tiene continue-on-error.
       - name: Abrir un issue si algo falló
-        if: failure()
+        if: always() && (steps.chequeo.outcome == 'failure' || failure())
         uses: actions/github-script@v9
+        env:
+          # Por env y no interpolado en el script: el informe lleva mensajes de
+          # error de servicios externos, y pegarlo dentro de un template
+          # literal deja que un backtick o un ${...} rompan o ejecuten código.
+          INFORME: ${{ steps.informe.outputs.texto }}
+          CHEQUEO: ${{ steps.chequeo.outcome }}
         with:
           script: |
             const marca = '<!-- chequeo-de-salud -->';
-            const informe = `${{ steps.informe.outputs.texto }}`;
+            const informe = process.env.INFORME || '(sin informe)';
+            const fallaronLosChequeos = process.env.CHEQUEO === 'failure';
             const cuerpo = [
               marca,
-              '## El chequeo automático encontró un problema',
+              fallaronLosChequeos
+                ? '## El chequeo automático encontró un problema'
+                : '## El chequeo no pudo completarse',
+              '',
+              fallaronLosChequeos
+                ? ''
+                : 'Falló un paso del propio workflow, no un chequeo. El informe' +
+                  ' de abajo puede estar incompleto o ser de antes del corte.',
               '',
               informe,
               '',
@@ -96,8 +122,10 @@ jobs:
               });
             }
 
+      # Sólo se cierra si los chequeos pasaron Y nada más se rompió: cerrar un
+      # issue mientras el workflow está roto sería tapar el problema.
       - name: Cerrar el issue si todo volvió a estar bien
-        if: success()
+        if: success() && steps.chequeo.outcome == 'success'
         uses: actions/github-script@v9
         with:
           script: |
@@ -123,3 +151,11 @@ jobs:
                 state: 'closed',
               });
             }
+
+      # Va último a propósito: el chequeo lleva continue-on-error, así que sin
+      # esto un chequeo en rojo dejaría el job en verde.
+      - name: Reflejar el resultado del chequeo
+        if: always() && steps.chequeo.outcome == 'failure'
+        run: |
+          echo "::error::El chequeo de salud falló; ver el informe en el issue con etiqueta 'salud'."
+          exit 1
