@@ -4,7 +4,7 @@ SET session_replication_role = replica;
 -- PostgreSQL database dump
 --
 
--- \restrict 2YTzSSg9VFfaWsYnUPvkLmwFYxP2QSSqUaKwATtiwZKdfSZxIRNDbcAR6fKfEqH
+-- \restrict 9KGFk5JhqP1L2PR58Kfghbpf7A10xVNTTJBD96AMBJIVAmNTLgv95lzT3cG5ruq
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.6
@@ -44,7 +44,7 @@ SET row_security = off;
 --
 
 INSERT INTO "auth"."users" ("instance_id", "id", "aud", "role", "email", "encrypted_password", "email_confirmed_at", "invited_at", "confirmation_token", "confirmation_sent_at", "recovery_token", "recovery_sent_at", "email_change_token_new", "email_change", "email_change_sent_at", "last_sign_in_at", "raw_app_meta_data", "raw_user_meta_data", "is_super_admin", "created_at", "updated_at", "phone", "phone_confirmed_at", "phone_change", "phone_change_token", "phone_change_sent_at", "email_change_token_current", "email_change_confirm_status", "banned_until", "reauthentication_token", "reauthentication_sent_at", "is_sso_user", "deleted_at", "is_anonymous") VALUES
-	('00000000-0000-0000-0000-000000000000', '4b455333-26d4-486a-9281-9dda59d1e695', 'authenticated', 'authenticated', 'fabianignaciomv@gmail.com', '$2a$10$TyRkEQASqXmydOcEXq89u.URBea2NccvK.7d1NZeGxIgUoNPpw3Vi', '2026-07-24 21:16:54.459058+00', NULL, '', NULL, '', NULL, '', '', NULL, '2026-07-25 02:18:27.551066+00', '{"provider": "email", "providers": ["email"]}', '{"sub": "4b455333-26d4-486a-9281-9dda59d1e695", "email": "fabianignaciomv@gmail.com", "email_verified": true, "phone_verified": false}', NULL, '2026-07-24 21:16:54.439366+00', '2026-07-26 03:51:18.031216+00', NULL, NULL, '', '', NULL, '', 0, NULL, '', NULL, false, NULL, false);
+	('00000000-0000-0000-0000-000000000000', '4b455333-26d4-486a-9281-9dda59d1e695', 'authenticated', 'authenticated', 'fabianignaciomv@gmail.com', '$2a$10$TyRkEQASqXmydOcEXq89u.URBea2NccvK.7d1NZeGxIgUoNPpw3Vi', '2026-07-24 21:16:54.459058+00', NULL, '', NULL, '', NULL, '', '', NULL, '2026-07-25 02:18:27.551066+00', '{"provider": "email", "providers": ["email"]}', '{"sub": "4b455333-26d4-486a-9281-9dda59d1e695", "email": "fabianignaciomv@gmail.com", "email_verified": true, "phone_verified": false}', NULL, '2026-07-24 21:16:54.439366+00', '2026-07-29 21:36:14.629258+00', NULL, NULL, '', '', NULL, '', 0, NULL, '', NULL, false, NULL, false);
 
 
 --
@@ -82,7 +82,7 @@ INSERT INTO "auth"."sessions" ("id", "user_id", "created_at", "updated_at", "fac
 	('6acc64ca-bc48-438f-98fc-02f55ee440ed', '4b455333-26d4-486a-9281-9dda59d1e695', '2026-07-24 21:38:11.811178+00', '2026-07-24 21:38:11.811178+00', NULL, 'aal1', NULL, NULL, 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_5_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/150.0.7871.113 Mobile/15E148 Safari/604.1', '186.107.196.247', NULL, NULL, NULL, NULL, NULL),
 	('f18914e0-af81-477b-a6b9-c5ac6c182bd0', '4b455333-26d4-486a-9281-9dda59d1e695', '2026-07-24 22:45:49.911257+00', '2026-07-24 22:45:49.911257+00', NULL, 'aal1', NULL, NULL, 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_5_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/150.0.7871.113 Mobile/15E148 Safari/604.1', '186.107.196.247', NULL, NULL, NULL, NULL, NULL),
 	('7a3a724c-ac47-498f-9ea1-07f46b103a13', '4b455333-26d4-486a-9281-9dda59d1e695', '2026-07-25 01:35:29.49979+00', '2026-07-25 01:35:29.49979+00', NULL, 'aal1', NULL, NULL, 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_5_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/150.0.7871.113 Mobile/15E148 Safari/604.1', '186.189.104.172', NULL, NULL, NULL, NULL, NULL),
-	('beb28c74-7dcb-49c8-934b-0ee558d06b0f', '4b455333-26d4-486a-9281-9dda59d1e695', '2026-07-25 02:18:27.551882+00', '2026-07-26 03:51:18.053823+00', NULL, 'aal1', NULL, '2026-07-26 03:51:18.053702', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5.2 Mobile/15E148 Safari/604.1', '186.189.78.168', NULL, NULL, NULL, NULL, NULL);
+	('beb28c74-7dcb-49c8-934b-0ee558d06b0f', '4b455333-26d4-486a-9281-9dda59d1e695', '2026-07-25 02:18:27.551882+00', '2026-07-29 21:36:14.649746+00', NULL, 'aal1', NULL, '2026-07-29 21:36:14.649562', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5.2 Mobile/15E148 Safari/604.1', '181.173.152.182', NULL, NULL, NULL, NULL, NULL);
 
 
 --
@@ -157,7 +157,10 @@ INSERT INTO "auth"."refresh_tokens" ("instance_id", "id", "token", "user_id", "r
 	('00000000-0000-0000-0000-000000000000', 12, 'o243zsomv3pj', '4b455333-26d4-486a-9281-9dda59d1e695', true, '2026-07-25 02:18:27.576303+00', '2026-07-25 03:16:51.776861+00', NULL, 'beb28c74-7dcb-49c8-934b-0ee558d06b0f'),
 	('00000000-0000-0000-0000-000000000000', 13, '2hzlyqkxkal2', '4b455333-26d4-486a-9281-9dda59d1e695', true, '2026-07-25 03:16:51.786462+00', '2026-07-25 05:23:47.775476+00', 'o243zsomv3pj', 'beb28c74-7dcb-49c8-934b-0ee558d06b0f'),
 	('00000000-0000-0000-0000-000000000000', 14, '7ldtuutldneb', '4b455333-26d4-486a-9281-9dda59d1e695', true, '2026-07-25 05:23:47.788565+00', '2026-07-26 03:51:17.9917+00', '2hzlyqkxkal2', 'beb28c74-7dcb-49c8-934b-0ee558d06b0f'),
-	('00000000-0000-0000-0000-000000000000', 15, '5y54wr6ytwdw', '4b455333-26d4-486a-9281-9dda59d1e695', false, '2026-07-26 03:51:18.018255+00', '2026-07-26 03:51:18.018255+00', '7ldtuutldneb', 'beb28c74-7dcb-49c8-934b-0ee558d06b0f');
+	('00000000-0000-0000-0000-000000000000', 15, '5y54wr6ytwdw', '4b455333-26d4-486a-9281-9dda59d1e695', true, '2026-07-26 03:51:18.018255+00', '2026-07-27 14:18:40.956561+00', '7ldtuutldneb', 'beb28c74-7dcb-49c8-934b-0ee558d06b0f'),
+	('00000000-0000-0000-0000-000000000000', 16, 'rcth5lcuy75t', '4b455333-26d4-486a-9281-9dda59d1e695', true, '2026-07-27 14:18:40.9817+00', '2026-07-27 19:42:12.810644+00', '5y54wr6ytwdw', 'beb28c74-7dcb-49c8-934b-0ee558d06b0f'),
+	('00000000-0000-0000-0000-000000000000', 17, 'uvj7fcjz4ztv', '4b455333-26d4-486a-9281-9dda59d1e695', true, '2026-07-27 19:42:12.82601+00', '2026-07-29 21:36:14.593318+00', 'rcth5lcuy75t', 'beb28c74-7dcb-49c8-934b-0ee558d06b0f'),
+	('00000000-0000-0000-0000-000000000000', 18, 'vhdjmptg4ycu', '4b455333-26d4-486a-9281-9dda59d1e695', false, '2026-07-29 21:36:14.617437+00', '2026-07-29 21:36:14.617437+00', 'uvj7fcjz4ztv', 'beb28c74-7dcb-49c8-934b-0ee558d06b0f');
 
 
 --
@@ -375,7 +378,35 @@ La geomancia clásica de este sistema **no calcula fechas, meses ni plazos espec
 ---
 
 ### Síntesis
-El ascenso es viable únicamente si dejas de confrontar la rigidez de la empresa y replanteas tu presentación con métricas frías, estabilidad técnica y una estrategia de reducción de riesgos.', NULL, 'sin_verificar', NULL);
+El ascenso es viable únicamente si dejas de confrontar la rigidez de la empresa y replanteas tu presentación con métricas frías, estabilidad técnica y una estrategia de reducción de riesgos.', NULL, 'sin_verificar', NULL),
+	('7c55cb96-c75b-4451-9f61-bf2d95ee29ff', '4b455333-26d4-486a-9281-9dda59d1e695', '2026-07-27 14:22:27.062893+00', 'si impulso que me aparezca una buena oferta laboral para ascender en mi empresa actual de manera interna o que me aparezca una oportunidad en una empresa externa, cómo se ve la energía respecto a este movimiento, ya que sé que las cosas están un poco estancadas acá donde estoy.', 'trabajo', 'Trabajo / carrera', 10, '[[2, 2, 2, 1], [1, 1, 2, 1], [2, 2, 2, 1], [1, 2, 1, 1]]', '[[2, 1, 2, 1], [2, 1, 2, 2], [2, 2, 2, 1], [1, 1, 1, 1]]', '[[1, 1, 2, 2], [1, 2, 1, 2], [2, 2, 2, 1], [1, 1, 1, 2]]', '[2, 1, 1, 2]', '[1, 1, 1, 1]', '[1, 2, 2, 1]', '[1, 2, 2, 2]', '[[2, 2, 2, 1], [1, 1, 2, 1], [2, 2, 2, 1], [1, 2, 1, 1], [2, 1, 2, 1], [2, 1, 2, 2], [2, 2, 2, 1], [1, 1, 1, 1], [1, 1, 2, 2], [1, 2, 1, 2], [2, 2, 2, 1], [1, 1, 1, 2]]', '*Aviso: La geomancia clásica de este sistema no calcula fechas, plazos ni tiempos concretos; juzga la tendencia y la condición del asunto. Las decisiones de carrera y financieras mayores deben valorarse con criterio profesional.*
+
+**Veredicto del Juez**: El Juez es **Fortuna Major**, una figura marcadamente favorable vinculada a la estabilidad duradera y al éxito sostenido. Esto indica un **sí condicionado** al movimiento de buscar una mejora laboral. La figura señala que el asunto posee un fundamento sólido para prosperar, pero su éxito no surge de la velocidad o la improvisación, sino de la solidez y del peso de los méritos a largo plazo.
+
+**Camino (Testigos)**: El camino hacia esta sentencia se compone de dos fuerzas contrastantes. El **Testigo Derecho**, que refleja el origen o la postura del consultante, es **Fortuna Minor**, una influencia favorable pero inclinada hacia los resultados rápidos, breves o transitorios. El **Testigo Izquierdo**, que muestra el desenlace o la respuesta del entorno, es **Via**, una figura neutra y fluida que representa el tránsito, el cambio constante y la falta de fijación. Esta combinación revela que el impulso inicial parte del deseo de cambios ágiles (Testigo Derecho), mientras que la resolución final dependerá de aceptar un proceso de transición y movimiento continuo (Testigo Izquierdo). Cabe destacar la presencia múltiple de **Cauda Draconis** en las Madres (1 y 3), en la Hija 3, en la Sobrina 3 y en múltiples casas (1, 3, 7 y 11): esta repetición insistente de la Cola del Dragón señala un patrón profundo de cierres, finales necesarios o la necesidad de dejar atrás un entorno viciado antes de que el éxito del Juez pueda manifestarse plenamente.
+
+**Detalle de la casa del tema (Casa 10)**: La casa 10, que rige la carrera y la reputación pública, está ocupada por **Puella**. Esta figura favorable aporta una cualidad de receptividad, diplomacia y búsqueda de armonía o aprobación en el ámbito profesional. Indica que la posición actual en el terreno laboral se beneficia de una aproximación amable, negociadora y enfocada en la estética o en las buenas relaciones con la autoridad, más que de la confrontación directa.
+
+**Estado del consultante (Casa 1)**: La casa 1 está ocupada por **Cauda Draconis**, lo que sitúa al consultante bajo una influencia desfavorable de desapego, salida de una situación o fin de un ciclo. Esta posición muestra que la energía personal actual está marcada por el agotamiento de una etapa previa o por la necesidad imperativa de clausurar un ciclo de estancamiento antes de poder proyectarse hacia el ascenso deseado.
+
+**Reconciliador**: El Reconciliador es **Amissio**, una figura neutra de desprendimiento o pérdida. Su función aquí es matizar el impacto del desenlace sobre el consultante indicando que, para alcanzar la estabilidad que promete el Juez, es indispensable soltar algo: abandonar viejos hábitos de trabajo, desvincularse de la rigidez del entorno actual o aceptar la pérdida de una comodidad conocida.
+
+**Condición o consejo accionable**: La condición para que el movimiento prospere es actuar con estrategia a largo plazo, asumiendo que el estancamiento actual (reflejado en los múltiples cierres de **Cauda Draconis**) requiere dejar ir lo que ya no sirve antes de buscar nuevas oportunidades. Conviene observar la diplomacia en la carrera (**Puella**) sin precipitarse en falsas urgencias, preparando el terreno para un cambio de ciclo inevitable.
+
+**Síntesis final**: El movimiento hacia una mejora laboral cuenta con el respaldo de un desenlace sólido y favorable, pero exige como condición indispensable cerrar con el estancamiento actual y desprenderse de dinámicas pasadas para permitir que la transición fluya con éxito.', NULL, 'sin_verificar', NULL),
+	('502f808a-5272-4c29-b1c0-c2b106d0a750', '4b455333-26d4-486a-9281-9dda59d1e695', '2026-07-27 14:38:02.528952+00', 'si impulso mediante un hechizo/ritual que me aparezca una buena oferta laboral para ascender en mi empresa actual de manera interna o que me aparezca una oportunidad en una empresa externa, cómo se ve la energía respecto a este movimiento, ya que sé que las cosas están un poco estancadas acá donde estoy. anteriormente ya lo he hecho y ha funcionado bien', 'trabajo', 'Trabajo / carrera', 10, '[[2, 2, 2, 2], [1, 2, 2, 2], [2, 2, 1, 1], [2, 1, 2, 2]]', '[[2, 1, 2, 2], [2, 2, 2, 1], [2, 2, 1, 2], [2, 2, 1, 2]]', '[[1, 2, 2, 2], [2, 1, 1, 1], [2, 1, 2, 1], [2, 2, 2, 2]]', '[1, 1, 1, 1]', '[2, 1, 2, 1]', '[1, 2, 1, 2]', '[1, 2, 1, 2]', '[[2, 2, 2, 2], [1, 2, 2, 2], [2, 2, 1, 1], [2, 1, 2, 2], [2, 1, 2, 2], [2, 2, 2, 1], [2, 2, 1, 2], [2, 2, 1, 2], [1, 2, 2, 2], [2, 1, 1, 1], [2, 1, 2, 1], [2, 2, 2, 2]]', 'Veredicto del Juez: El Juez de esta tirada es **Puella**, una figura favorable que emite un veredicto de **sí condicionado** respecto a la efectividad de impulsar una nueva oferta u oportunidad laboral. No obstante, recuerda que la geomancia clásica de este sistema no calcula fechas, plazos ni tiempos cronológicos específicos, sino que juzga la tendencia y la condición del asunto. 
+
+Camino de los Testigos: El Testigo Derecho, que muestra a **Via**, refleja el camino neutral y de tránsito del consultante ante el estancamiento mencionado. El Testigo Izquierdo, que muestra a **Puer**, aporta una energía impulsiva, directa y de confrontación o acción rápida hacia el exterior. Además, cabe destacar la presencia repetida de **Carcer** tanto en la Hija 3 como en la Hija 4 (y trasladado a las casas 7 y 8), lo que refuerza e insiste con fuerza en los bloqueos estructurales, las restricciones y las limitaciones profundas que existen en el entorno o en las estructuras actuales del consultante. Asimismo, la figura de **Populus** se repite tanto en la Madre 1 como en la Sobrina 4 y en la Casa 12, insistiendo en una dinámica de colectividad, pasividad o de estar sujeto a las mareas del entorno en lugar de ejercer un control absoluto.
+
+Detalle de la casa del tema (Casa 10 - Carrera y reputación): En la casa relevante para la carrera y la autoridad encontramos a **Acquisitio**. Esta figura es altamente favorable para obtener beneficios, capturar nuevas opciones y abrir puertas materiales o profesionales, lo cual valida de manera positiva la aspiración central de encontrar una vía de salida al estancamiento actual.
+
+Estado del consultante (Casa 1): La figura que ocupa la primera casa es **Populus**, lo que indica que el estado del consultante es de gran receptividad, adaptabilidad a lo colectivo y reflejo de las circunstancias del momento, sin hallarse en una postura de mando unilateral sino de asimilación del entorno.
+
+Reconciliador: El Reconciliador es **Puella**, idéntico a la figura del Juez. Esto sintoniza de forma armónica el resultado final con el desenlace, indicando que el impacto de este movimiento sobre el consultante traerá una resolución apacible, aunque sujeta al manejo superficial o volátil de los recursos que representa esta figura.
+
+Condición o consejo accionable: La condición para que este impulso mágico o ritual logre materializar la oferta anhelada radica en evitar la rigidez excesiva y canalizar la energía con dirección clara, observando que las restricciones del entorno (visibles en las figuras de restricción de la tirada) exigen paciencia táctica y evitar decisiones puramente arrebatadas. *(Nota: Esta lectura geomántica ofrece un juicio simbólico y estratégico sobre la tendencia del asunto, pero no sustituye el consejo profesional en decisiones financieras o laborales mayores).*
+
+Síntesis: El movimiento impulsado tiene una tendencia favorable hacia la obtención de ganancias profesionales, condicionado a sortear las limitaciones estructurales existentes mediante una acción medida y flexible.', NULL, 'sin_verificar', NULL);
 
 
 --
@@ -384,7 +415,8 @@ El ascenso es viable únicamente si dejas de confrontar la rigidez de la empresa
 
 INSERT INTO "public"."uso_diario" ("user_id", "fecha", "consultas") VALUES
 	('4b455333-26d4-486a-9281-9dda59d1e695', '2026-07-25', 5),
-	('4b455333-26d4-486a-9281-9dda59d1e695', '2026-07-26', 1);
+	('4b455333-26d4-486a-9281-9dda59d1e695', '2026-07-26', 1),
+	('4b455333-26d4-486a-9281-9dda59d1e695', '2026-07-27', 8);
 
 
 --
@@ -433,13 +465,13 @@ INSERT INTO "public"."uso_diario" ("user_id", "fecha", "consultas") VALUES
 -- Name: refresh_tokens_id_seq; Type: SEQUENCE SET; Schema: auth; Owner: supabase_auth_admin
 --
 
-SELECT pg_catalog.setval('"auth"."refresh_tokens_id_seq"', 15, true);
+SELECT pg_catalog.setval('"auth"."refresh_tokens_id_seq"', 18, true);
 
 
 --
 -- PostgreSQL database dump complete
 --
 
--- \unrestrict 2YTzSSg9VFfaWsYnUPvkLmwFYxP2QSSqUaKwATtiwZKdfSZxIRNDbcAR6fKfEqH
+-- \unrestrict 9KGFk5JhqP1L2PR58Kfghbpf7A10xVNTTJBD96AMBJIVAmNTLgv95lzT3cG5ruq
 
 RESET ALL;
