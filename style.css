@@ -665,6 +665,83 @@ summary {
   color: var(--cobre-fuerte);
 }
 
+/* --- Controles de la bitácora: filtro por tema y orden --- */
+
+.controles-bitacora {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.8rem;
+}
+
+.control-bitacora {
+  flex: 1 1 9rem;
+}
+
+.control-bitacora label {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--arena-suave);
+  margin-bottom: 0.2rem;
+}
+
+.control-bitacora select {
+  width: 100%;
+  margin: 0;
+}
+
+.grupo-bitacora {
+  margin: 1rem 0 0.2rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--arena-suave);
+}
+
+/* --- Hilo de seguimientos dentro de una entrada --- */
+
+.hilo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.hilo:not(:empty) {
+  margin-top: 1rem;
+  border-left: 2px solid var(--panel-borde);
+  padding-left: 0.7rem;
+}
+
+.entrada-hilo {
+  background: var(--negro-suave);
+  border: 1px solid var(--panel-borde);
+  border-radius: var(--radio);
+  padding: 0.65rem 0.75rem;
+}
+
+.entrada-hilo > summary {
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.entrada-hilo .entrada-pregunta { font-size: 0.92rem; }
+
+.seguimiento {
+  margin-top: 1rem;
+  border-top: 1px solid var(--panel-borde);
+  padding-top: 0.9rem;
+}
+
+.seguimiento h4 {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+  color: var(--ocre);
+}
+
+.seguimiento .contador-caracteres { margin-bottom: 0.6rem; }
+
 @media (min-width: 640px) {
   .carta-casas { grid-template-columns: repeat(3, 1fr); }
   .fila-botones-final { flex-direction: row; }
