@@ -42,6 +42,14 @@ Funciona y está desplegado en GitHub Pages desde `main`:
   correctivos, y **sin lectura de respaldo** (si el modelo falla, se dice)
 - Bitácora privada en Supabase con RLS, guardado opcional, verificación
   posterior, borrado y export en Markdown/JSON
+- Seguimientos: desde la bitácora se le puede preguntar otra cosa a una tirada
+  ya levantada, sin tirar de nuevo. Cada seguimiento es una fila más de
+  `consultas` con `origen_id` apuntando a la madre y el escudo copiado, así
+  hereda tarjeta, verificación, borrado y export sin código aparte. El prompt
+  (`construirPromptSeguimiento`) le devuelve al modelo la pregunta original, el
+  veredicto que ya dio, qué ocurrió realmente y las repreguntas previas, con un
+  presupuesto de caracteres para no pasarse del límite de la Edge Function
+- Bitácora con filtro por tema, orden (fecha o resultado) y hilos anidados
 - PWA instalable con service worker (red primero para HTML)
 - **CI con 33 tests que bloquea el despliegue** (`.github/workflows/ci.yml`)
 
@@ -128,6 +136,14 @@ guardan (`acierto`, `resultado_real`); falta leerlos y mostrarlos.
 - **Para correr los tests en ese entorno** hace falta apuntar al Chromium ya
   instalado: `CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome
   npx playwright test`. En CI no hace falta.
+- **El doble de Supabase de los tests no tiene claves foráneas.** El borrado en
+  cascada de un hilo (`origen_id`) está imitado a mano en `SUPABASE_FALSO`
+  (`tests/ayuda.js`): si se agrega otra relación en cascada hay que replicarla
+  ahí o el test dirá que funciona algo que en la base no pasa.
+- **La tarjeta de la bitácora se arma una vez, pero el hilo crece durante la
+  visita.** Todo lo que dependa de cuántos seguimientos hay (el aviso de
+  borrado, el contador del resumen) se calcula al momento de usarlo, no al
+  crear la tarjeta. Ya se rompió una vez por hacerlo al revés.
 
 ## Lo que no hay que tocar
 

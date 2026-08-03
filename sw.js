@@ -19,7 +19,7 @@
    milisegundos en un sitio de este tamaño.
    ========================================================================== */
 
-const VERSION = 'geomancia-v2';
+const VERSION = 'geomancia-v3';
 
 // Rutas relativas al alcance del service worker, para que funcione tanto en la
 // raíz del dominio como en un subdirectorio de GitHub Pages.
