@@ -114,6 +114,22 @@
     <div class="contenedor">
       <h2>Mi bitácora</h2>
       <p class="estado-bitacora" id="estado-bitacora">Cargando…</p>
+
+      <div class="controles-bitacora" id="controles-bitacora" hidden>
+        <div class="control-bitacora">
+          <label for="filtro-tema">Tema</label>
+          <select id="filtro-tema"></select>
+        </div>
+        <div class="control-bitacora">
+          <label for="orden-bitacora">Orden</label>
+          <select id="orden-bitacora">
+            <option value="recientes">Más recientes primero</option>
+            <option value="antiguas">Más antiguas primero</option>
+            <option value="acierto">Agrupadas por resultado</option>
+          </select>
+        </div>
+      </div>
+
       <div id="lista-bitacora" class="lista-bitacora"></div>
 
       <div class="bloque-exportar" id="bloque-exportar" hidden>

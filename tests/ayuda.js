@@ -23,6 +23,20 @@ const INTERPRETACION_DE_PRUEBA = [
 async function stubGemini(page, opciones) {
   opciones = opciones || {};
   await page.route('**generativelanguage.googleapis.com**', async function (ruta) {
+    // `alPedir` deja mirar el prompt que se mandó (para verificar que un
+    // seguimiento lleve la memoria de la tirada) y devolver un texto distinto.
+    let texto = opciones.texto;
+    if (opciones.alPedir) {
+      let cuerpo = null;
+      try {
+        cuerpo = ruta.request().postDataJSON();
+      } catch (err) {
+        cuerpo = null;
+      }
+      const prompt = (cuerpo && cuerpo.contents && cuerpo.contents[0].parts[0].text) || '';
+      const propuesto = opciones.alPedir(prompt);
+      if (propuesto) texto = propuesto;
+    }
     if (opciones.demoraMs) {
       await new Promise(function (r) { setTimeout(r, opciones.demoraMs); });
     }
@@ -39,7 +53,7 @@ async function stubGemini(page, opciones) {
       body: JSON.stringify({
         candidates: [{
           finishReason: 'STOP',
-          content: { parts: [{ text: opciones.texto || INTERPRETACION_DE_PRUEBA }] },
+          content: { parts: [{ text: texto || INTERPRETACION_DE_PRUEBA }] },
         }],
       }),
     });
@@ -67,8 +81,11 @@ window.supabase = { createClient: function () {
       delete: function () { api._borrar = true; return api; },
       eq: function (col, val) {
         if (api._borrar) {
-          var i = filas.findIndex(function (f) { return f.id === val; });
-          if (i >= 0) filas.splice(i, 1);
+          // La base borra en cascada los seguimientos (origen_id): se imita acá
+          // o el test de borrado de un hilo mentiría.
+          for (var j = filas.length - 1; j >= 0; j--) {
+            if (filas[j].id === val || filas[j].origen_id === val) filas.splice(j, 1);
+          }
         } else {
           filas.forEach(function (f) { if (f.id === val) Object.assign(f, api._cambios); });
         }

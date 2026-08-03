@@ -25,7 +25,11 @@ astrológicas.
    veredicto ni se guarda una interpretación vacía como si fuera válida.
 5. Si el consultante tiene sesión, puede guardar la lectura en su bitácora privada (Supabase)
    y, más tarde, registrar qué ocurrió realmente para medir el acierto del oráculo.
-6. La lectura se puede copiar con el formato ya renderizado (para pegarla con títulos y
+6. Desde la bitácora se puede **volver sobre una tirada guardada y preguntarle otra cosa**, sin
+   levantar un escudo nuevo: el mismo escudo se relee con la pregunta original, el veredicto que
+   ya dio, lo que ocurrió realmente y las repreguntas anteriores a la vista. Cada seguimiento
+   queda colgando de su tirada, se verifica y se exporta igual que las demás.
+7. La lectura se puede copiar con el formato ya renderizado (para pegarla con títulos y
    negritas en notas del celular) o exportar junto con toda la bitácora en Markdown o JSON.
 
 ## Arquitectura
@@ -90,15 +94,17 @@ sumaría infraestructura sin resolver un problema que hoy exista.
 ```bash
 node scripts/verify-figures.js   # figuras, casas y un caso fijo del escudo
 npm install
-npm test                          # verificación + suite de Playwright (36 tests)
+npm test                          # verificación + suite de Playwright (81 tests)
 ```
 
 La suite de tests (`tests/`) simula Gemini y Supabase con dobles locales — no necesita
 claves ni red para correr — y cubre: la matemática del escudo sobre las 65.536 combinaciones
 posibles de Madres, la validación anti-alucinación, que la aleatoriedad no tenga sesgo de
 módulo, los recorridos completos de la app (consulta, Markdown renderizado, exportación), la
-autenticación, el guardado/borrado en la bitácora, y que el proxy de Gemini se use cuando
-está disponible y se degrade a la clave propia cuando no.
+autenticación, el guardado/borrado en la bitácora, los seguimientos sobre una tirada guardada
+(que el prompt lleve la memoria de la consulta anterior, que no se guarde nada si el modelo
+falla, y que borrar la tirada madre se lleve el hilo), el filtro y el orden de la bitácora, y
+que el proxy de Gemini se use cuando está disponible y se degrade a la clave propia cuando no.
 
 El despliegue (`deploy.yml`) depende de que esta suite pase — un error de sintaxis o una
 regresión no llegan a publicarse.
@@ -155,6 +161,7 @@ tests/                              Suite de Playwright (escudo, app, bitácora)
 playwright.config.js, package.json  Configuración de los tests
 
 supabase/migrations/                Esquema de la base, versionado
+                                    (0003: `origen_id`, el hilo de seguimientos)
 supabase/functions/interpretar/     Edge Function: proxy de la clave de Gemini
 
 .github/workflows/deploy.yml        Deploy a GitHub Pages (depende de ci.yml)
