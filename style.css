@@ -728,19 +728,50 @@ summary {
 
 .entrada-hilo .entrada-pregunta { font-size: 0.92rem; }
 
-.seguimiento {
-  margin-top: 1rem;
-  border-top: 1px solid var(--panel-borde);
-  padding-top: 0.9rem;
-}
-
-.seguimiento h4 {
-  margin: 0 0 0.5rem;
+.titulo-hilo {
+  margin: 0 0 0.6rem;
   font-size: 0.95rem;
   color: var(--ocre);
 }
 
-.seguimiento .contador-caracteres { margin-bottom: 0.6rem; }
+.btn-seguir-asunto {
+  width: 100%;
+  margin-bottom: 0.9rem;
+}
+
+/* --- Cartel del hilo, en pregunta y resultado --- */
+
+.cartel-hilo {
+  background: var(--panel);
+  border: 1px solid var(--ocre);
+  border-radius: var(--radio);
+  padding: 0.7rem 0.85rem;
+  margin-bottom: 1.1rem;
+}
+
+.cartel-hilo-titulo {
+  margin: 0;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ocre);
+}
+
+.cartel-hilo-pregunta {
+  margin: 0.3rem 0 0.2rem;
+  color: var(--arena);
+}
+
+.cartel-hilo-meta {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--arena-suave);
+}
+
+.cartel-hilo .btn-enlace {
+  margin-top: 0.4rem;
+  font-size: 0.82rem;
+}
 
 @media (min-width: 640px) {
   .carta-casas { grid-template-columns: repeat(3, 1fr); }

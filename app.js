@@ -66,13 +66,9 @@ function limpiarDatosSensibles(texto, contexto) {
 
   const propios = contexto || {};
   // La pregunta y la interpretación se reemplazan primero, tal cual están.
-  // Las del seguimiento en vuelo van aparte: no viven en los campos de la
-  // consulta en curso, pero son igual de privadas.
   [
     { valor: propios.pregunta, etiqueta: '[PREGUNTA]' },
     { valor: propios.interpretacion, etiqueta: '[INTERPRETACION]' },
-    { valor: propios.preguntaSeguimiento, etiqueta: '[PREGUNTA]' },
-    { valor: propios.interpretacionSeguimiento, etiqueta: '[INTERPRETACION]' },
   ].forEach(function (dato) {
     if (dato.valor && dato.valor.length > 8) {
       salida = salida.split(dato.valor).join(dato.etiqueta);
@@ -147,13 +143,9 @@ function iniciarSentry() {
       },
 
       beforeSend: function (evento) {
-        const hay = typeof estado !== 'undefined';
-        const seg = (hay && estado.seguimiento) || {};
         return limpiarEventoSentry(evento, {
-          pregunta: (hay && estado.pregunta) || '',
-          interpretacion: (hay && estado.interpretacion) || '',
-          preguntaSeguimiento: seg.pregunta || '',
-          interpretacionSeguimiento: seg.interpretacion || '',
+          pregunta: (typeof estado !== 'undefined' && estado.pregunta) || '',
+          interpretacion: (typeof estado !== 'undefined' && estado.interpretacion) || '',
         });
       },
     });
@@ -352,6 +344,8 @@ async function guardarConsultaEnBitacora() {
   const e = estado.escudo;
   const fila = {
     user_id: usuarioActual.id,
+    // Si se está siguiendo un asunto, la consulta cuelga de la raíz del hilo.
+    origen_id: estado.hilo ? estado.hilo.raizId : null,
     pregunta: estado.pregunta,
     tema_id: estado.tema.id,
     tema_etiqueta: estado.tema.etiqueta,
@@ -376,45 +370,6 @@ async function guardarConsultaEnBitacora() {
     return null;
   }
   return data && data.id;
-}
-
-/* Un seguimiento es una pregunta NUEVA sobre una tirada ya levantada: no se
-   trazan líneas de nuevo, se copia el escudo de la consulta madre y solo cambia
-   la pregunta y la interpretación. Se guarda como una fila más para que herede
-   sin código extra la verificación posterior, el borrado y la exportación. */
-async function guardarSeguimientoEnBitacora(raiz, pregunta, interpretacion) {
-  const cliente = iniciarSupabase();
-  if (!cliente || !usuarioActual || !raiz || !pregunta || !interpretacion) return null;
-
-  const fila = {
-    user_id: usuarioActual.id,
-    // El hilo cuelga siempre de la raíz: un seguimiento de un seguimiento
-    // apunta igual a la tirada original, así el árbol nunca pasa de un nivel.
-    origen_id: raiz.origen_id || raiz.id,
-    pregunta: pregunta,
-    tema_id: raiz.tema_id,
-    tema_etiqueta: raiz.tema_etiqueta,
-    casa_tema: raiz.casa_tema,
-    madres: raiz.madres,
-    hijas: raiz.hijas,
-    sobrinas: raiz.sobrinas,
-    testigo_derecho: raiz.testigo_derecho,
-    testigo_izquierdo: raiz.testigo_izquierdo,
-    juez: raiz.juez,
-    reconciliador: raiz.reconciliador,
-    casas: raiz.casas,
-    interpretacion: interpretacion,
-    acierto: 'sin_verificar',
-  };
-
-  const { data, error } = await cliente.from('consultas').insert(fila).select('*').single();
-  if (error) {
-    console.error('No se pudo guardar el seguimiento en la bitácora:', error);
-    reportarError(new Error(error.message || 'Fallo al guardar el seguimiento'),
-      'bitacora.seguimiento', { codigo: error.code, detalle: error.details });
-    throw new Error(error.message || 'No se pudo guardar el seguimiento.');
-  }
-  return data || null;
 }
 
 async function listarConsultas() {
@@ -789,14 +744,20 @@ const estado = {
   // true cuando la pregunta ya se usó en una tirada: al volver a la pantalla de
   // pregunta se limpia el textarea en vez de arrastrar la consulta anterior.
   preguntaConsumida: false,
-  // Pregunta y respuesta del seguimiento en vuelo. No es estado de la consulta:
-  // está acá para que el saneado de Sentry (beforeSend) también las tape.
-  seguimiento: { pregunta: '', interpretacion: '' },
+  // El asunto que se está siguiendo, o null si la consulta es suelta.
+  // `consultas` son las del hilo, de la más vieja a la más nueva.
+  hilo: null, // { raizId, consultas: [fila, …] }
 };
 
 /* ==========================================================================
    NAVEGACIÓN ENTRE PANTALLAS
    ========================================================================== */
+
+/* Oculta un elemento sin romperse si falta (ver alTocar). */
+function ocultar(id) {
+  const el = document.getElementById(id);
+  if (el) el.hidden = true;
+}
 
 function mostrarPantalla(id) {
   document.querySelectorAll('.pantalla').forEach(function (el) {
@@ -982,6 +943,7 @@ function irAPantallaCalculo() {
 
 function irAPantallaResultado() {
   mostrarPantalla('pantalla-resultado');
+  actualizarCartelHilo();
   renderizarJuezDestacado();
   renderizarEscudoCompleto();
   renderizarCartaCasas();
@@ -1147,26 +1109,44 @@ function construirPrompt() {
   const bloqueEscudo = bloques.bloqueEscudo;
   const bloqueCasas = bloques.bloqueCasas;
 
-  return INSTRUCCIONES_SISTEMA + '\n\n' +
-    '--- CONSULTA ---\n' +
-    'Fecha: ' + fechaTexto + '\n' +
-    'Pregunta: ' + estado.pregunta + '\n' +
-    'Tema seleccionado: ' + estado.tema.etiqueta + (casaRelevante ? ' (casa ' + casaRelevante + ')' : '') + '\n\n' +
-    '--- ESCUDO COMPLETO ---\n' + bloqueEscudo + '\n\n' +
-    '--- CARTA DE 12 CASAS (figura asignada a cada casa) ---\n' + bloqueCasas + '\n\n' +
-    '--- FIGURA EN LA CASA DEL TEMA ---\n' + figuraCasaRelevante + '\n\n' +
-    '--- FIGURA EN CASA 1 (el consultante) ---\n' + figuraCasa1 + '\n\n' +
-    'Redacta la interpretación siguiendo exactamente la jerarquía y estructura indicadas en las reglas. ' +
-    'Recuerda: solo puedes nombrar figuras que aparezcan literalmente en los datos de arriba.';
+  const armar = function (bloqueHilo) {
+    return INSTRUCCIONES_SISTEMA + (bloqueHilo ? INSTRUCCIONES_HILO : '') + '\n\n' +
+      '--- CONSULTA ---\n' +
+      'Fecha: ' + fechaTexto + '\n' +
+      'Pregunta: ' + estado.pregunta + '\n' +
+      'Tema seleccionado: ' + estado.tema.etiqueta + (casaRelevante ? ' (casa ' + casaRelevante + ')' : '') + '\n\n' +
+      '--- ESCUDO COMPLETO ---\n' + bloqueEscudo + '\n\n' +
+      '--- CARTA DE 12 CASAS (figura asignada a cada casa) ---\n' + bloqueCasas + '\n\n' +
+      '--- FIGURA EN LA CASA DEL TEMA ---\n' + figuraCasaRelevante + '\n\n' +
+      '--- FIGURA EN CASA 1 (el consultante) ---\n' + figuraCasa1 + '\n\n' +
+      (bloqueHilo || '') +
+      'Redacta la interpretación siguiendo exactamente la jerarquía y estructura indicadas en las reglas. ' +
+      'Recuerda: solo puedes nombrar figuras que aparezcan literalmente en los datos de arriba.';
+  };
+
+  const pasos = estado.hilo ? estado.hilo.consultas : [];
+  if (!pasos.length) return armar('');
+
+  // El historial se afloja soltando el veredicto del paso más viejo hasta entrar
+  // en el presupuesto. El escudo de hoy y la pregunta de hoy no se recortan nunca.
+  let conVeredicto = MAX_PASOS_CON_VEREDICTO;
+  let prompt = armar(bloqueDeHilo(pasos, conVeredicto));
+  while (prompt.length > TOPE_PROMPT && conVeredicto > 0) {
+    conVeredicto--;
+    prompt = armar(bloqueDeHilo(pasos, conVeredicto));
+  }
+  return prompt;
 }
 
 /* ==========================================================================
-   SEGUIMIENTO: PREGUNTARLE OTRA COSA A UNA TIRADA YA LEVANTADA
+   HILOS: SEGUIR UN ASUNTO A LO LARGO DEL TIEMPO
 
-   Una consulta guardada conserva el escudo entero. Con eso alcanza para
-   volver sobre ella meses después y preguntarle algo distinto SIN tirar de
-   nuevo: se le devuelve al modelo la tirada original, el veredicto que ya dio,
-   lo que el consultante registró que pasó, y los seguimientos anteriores.
+   Un asunto no se agota en una consulta. Meses después se vuelve sobre lo
+   mismo con otra pregunta, y ahí se levanta un escudo NUEVO — el de entonces
+   ya cumplió. Lo que se hereda no es la tirada: es el conocimiento. El prompt
+   de cada paso lleva las consultas anteriores del asunto (pregunta, Juez,
+   veredicto y qué ocurrió realmente) para que el modelo juzgue el escudo de
+   hoy sabiendo de dónde viene el asunto.
    ========================================================================== */
 
 /* La fila guardada usa snake_case; el resto del código (y el validador
@@ -1183,19 +1163,19 @@ function escudoDeConsulta(c) {
   };
 }
 
-const INSTRUCCIONES_SEGUIMIENTO =
-  '\n\nESTA CONSULTA ES UN SEGUIMIENTO. Reglas adicionales, por encima de cualquier otra:\n' +
-  'S1. NO se levantó una tirada nueva. El escudo de abajo es el MISMO que se trazó el día de la tirada original, y es el único material del que puedes hablar.\n' +
-  'S2. Ya diste un veredicto sobre este escudo; está transcrito abajo. No lo repitas: responde la PREGUNTA NUEVA. Si el veredicto anterior se sostiene, dilo en una línea y sigue con lo nuevo. Si el escudo, releído desde la pregunta nueva, dice algo distinto de lo que dijiste antes, dilo con todas las letras y explica qué posición lo cambia.\n' +
-  'S3. Si hay registro de QUÉ OCURRIÓ REALMENTE, es un hecho consumado, no un pronóstico: no vuelvas a predecir lo que ya pasó, léelo como punto de partida.\n' +
-  'S4. Ha pasado tiempo desde la tirada. Puedes señalar que el escudo juzgó el asunto tal como estaba entonces, pero no inventes fechas ni plazos (regla 12).\n' +
-  'S5. Si la pregunta nueva se aleja tanto del asunto original que este escudo no puede juzgarla (otro asunto, otra persona, otro dominio), DILO derecho: que hace falta levantar una tirada nueva. No fuerces la lectura para complacer.\n';
+const INSTRUCCIONES_HILO =
+  '\n\nESTA CONSULTA CONTINÚA UN ASUNTO YA CONSULTADO. Reglas adicionales, por encima de cualquier otra:\n' +
+  'H1. El escudo de esta consulta se levantó HOY y es el ÚNICO que juzga la pregunta de hoy. Las tiradas anteriores son contexto: ya cumplieron, no las vuelvas a interpretar.\n' +
+  'H2. Cuando nombres una figura de una tirada anterior, di explícitamente que era de aquella tirada. NUNCA la mezcles con las figuras de hoy ni la trates como si estuviera en el escudo actual.\n' +
+  'H3. Lo que el consultante registró como ocurrido es un hecho consumado, no un pronóstico: no vuelvas a predecirlo, tómalo como punto de partida.\n' +
+  'H4. Si el Juez de hoy apunta distinto que el de una tirada anterior, señálalo: en un asunto que se sigue en el tiempo eso es información, no un error. Explica qué cambió.\n' +
+  'H5. Si la pregunta de hoy es la misma que ya se hizo y nada cambió en las circunstancias, dilo: repetir la pregunta al oráculo no mejora la respuesta.\n' +
+  'H6. Si la pregunta de hoy ya no tiene relación con el asunto del hilo, dilo y juzga solo lo de hoy.\n';
 
 // El proxy rechaza prompts de más de 20000 caracteres; se deja margen.
-const TOPE_PROMPT_SEGUIMIENTO = 18000;
-const TOPE_VEREDICTO_ORIGEN = 3000;
-const TOPE_RESPUESTA_SEGUIMIENTO = 1200;
-const MAX_SEGUIMIENTOS_CON_TEXTO = 5;
+const TOPE_PROMPT = 18000;
+const TOPE_VEREDICTO_PREVIO = 700;
+const MAX_PASOS_CON_VEREDICTO = 6;
 
 /* Corta un texto largo por el salto de línea más cercano, para no partir una
    frase al medio. Deja constancia del recorte: el modelo no debe creer que ese
@@ -1217,71 +1197,51 @@ function fechaCortaDeIso(iso) {
   }
 }
 
-/* `seguimientos` viene en orden cronológico ascendente. `conTexto` dice cuántos
-   de los más recientes llevan la respuesta entera: los anteriores quedan como
-   una línea con la pregunta, para que el hilo se entienda sin gastar el
-   presupuesto de caracteres. */
-function bloqueDeSeguimientosPrevios(seguimientos, conTexto) {
-  if (!seguimientos.length) return '(ninguno: esta es la primera repregunta sobre esta tirada)';
+/* La sección "## Respuesta directa" de una lectura guardada: el veredicto en
+   palabras corrientes. Es el resumen ideal de un paso anterior porque la regla 6
+   obliga a que esa sección NO nombre ninguna figura — así el historial no mete
+   nombres que puedan confundirse con el escudo de hoy.
 
-  const desde = Math.max(0, seguimientos.length - conTexto);
-  return seguimientos.map(function (s, i) {
-    const cabecera = '[' + fechaCortaDeIso(s.creada_en) + '] Pregunta: ' + s.pregunta;
-    if (i < desde) return cabecera + '\n  (respuesta omitida por extensión)';
-    return cabecera + '\nRespuesta que diste:\n' + recortar(s.interpretacion, TOPE_RESPUESTA_SEGUIMIENTO);
-  }).join('\n\n');
+   Las lecturas viejas, anteriores a esa regla, no la tienen: ahí se recorta el
+   principio como aproximación. */
+function respuestaDirectaDe(interpretacion) {
+  const texto = (interpretacion || '').trim();
+  const marca = '## Respuesta directa';
+  const inicio = texto.indexOf(marca);
+  if (inicio === -1) return recortar(texto, TOPE_VEREDICTO_PREVIO);
+
+  const resto = texto.slice(inicio + marca.length);
+  const fin = resto.indexOf('\n## ');
+  return recortar((fin === -1 ? resto : resto.slice(0, fin)).trim(), TOPE_VEREDICTO_PREVIO);
 }
 
-function construirPromptSeguimiento(raiz, seguimientos, preguntaNueva) {
-  const escudo = escudoDeConsulta(raiz);
-  const casaRelevante = raiz.casa_tema;
-  const bloques = bloquesDeTirada(escudo, raiz.casas, casaRelevante);
-  const figuraCasaRelevante = casaRelevante
-    ? describirFigura(raiz.casas[casaRelevante - 1])
-    : 'No aplica (consulta general, solo se juzga con el Juez).';
-  const figuraCasa1 = describirFigura(raiz.casas[0]);
+/* Las consultas anteriores del asunto, de la más vieja a la más nueva.
+   `conVeredicto` dice cuántas de las más recientes llevan el veredicto; las
+   anteriores quedan con fecha, pregunta y Juez, que es lo que sostiene el hilo
+   sin gastar el presupuesto de caracteres. */
+function bloqueDeHilo(pasos, conVeredicto) {
+  const desde = Math.max(0, pasos.length - conVeredicto);
 
-  const resultado = ETIQUETAS_ACIERTO[raiz.acierto || 'sin_verificar'];
-  const queOcurrio = (raiz.resultado_real || '').trim() ||
-    '(el consultante todavía no registró qué pasó)';
+  const entradas = pasos.map(function (paso, i) {
+    const lineas = [
+      '[' + (i + 1) + '] ' + fechaCortaDeIso(paso.creada_en) + ' — Pregunta: «' + paso.pregunta + '»',
+      '    Juez de aquella tirada: ' + figuraPorPuntos(paso.juez).nombre,
+    ];
+    if (i >= desde) {
+      lineas.push('    Veredicto que se dio: ' + respuestaDirectaDe(paso.interpretacion).replace(/\n/g, '\n    '));
+      const ocurrio = (paso.resultado_real || '').trim();
+      lineas.push('    Qué ocurrió realmente (' + ETIQUETAS_ACIERTO[paso.acierto || 'sin_verificar'] + '): ' +
+        (ocurrio || 'todavía sin registrar'));
+    } else {
+      lineas.push('    (veredicto omitido por extensión)');
+    }
+    return lineas.join('\n');
+  });
 
-  const armar = function (topeVeredicto, conTexto) {
-    return INSTRUCCIONES_SISTEMA + INSTRUCCIONES_SEGUIMIENTO + '\n\n' +
-      '--- TIRADA ORIGINAL ---\n' +
-      'Fecha en que se levantó el escudo: ' + fechaCortaDeIso(raiz.creada_en) + '\n' +
-      'Pregunta original: ' + raiz.pregunta + '\n' +
-      'Tema: ' + raiz.tema_etiqueta + (casaRelevante ? ' (casa ' + casaRelevante + ')' : '') + '\n\n' +
-      '--- ESCUDO COMPLETO (el mismo de aquella tirada) ---\n' + bloques.bloqueEscudo + '\n\n' +
-      '--- CARTA DE 12 CASAS (figura asignada a cada casa) ---\n' + bloques.bloqueCasas + '\n\n' +
-      '--- FIGURA EN LA CASA DEL TEMA ---\n' + figuraCasaRelevante + '\n\n' +
-      '--- FIGURA EN CASA 1 (el consultante) ---\n' + figuraCasa1 + '\n\n' +
-      '--- VEREDICTO QUE YA SE DIO SOBRE ESTA TIRADA ---\n' + recortar(raiz.interpretacion, topeVeredicto) + '\n\n' +
-      '--- QUÉ OCURRIÓ REALMENTE (registrado por el consultante) ---\n' +
-      'Resultado registrado: ' + resultado + '\n' + queOcurrio + '\n\n' +
-      '--- SEGUIMIENTOS ANTERIORES SOBRE ESTA MISMA TIRADA ---\n' +
-      bloqueDeSeguimientosPrevios(seguimientos, conTexto) + '\n\n' +
-      '--- PREGUNTA NUEVA (hoy, ' + fechaCortaDeIso(new Date().toISOString()) + ') ---\n' +
-      preguntaNueva + '\n\n' +
-      'Responde la PREGUNTA NUEVA releyendo este mismo escudo, con la estructura obligatoria ' +
-      '("## Respuesta directa" y después "## La lectura"). ' +
-      'Recuerda: solo puedes nombrar figuras que aparezcan literalmente en los datos de arriba.';
-  };
-
-  // Se va soltando historial hasta entrar en el presupuesto. Lo que nunca se
-  // recorta es el escudo, las casas ni la pregunta nueva: sin eso no hay lectura.
-  let conTexto = MAX_SEGUIMIENTOS_CON_TEXTO;
-  let topeVeredicto = TOPE_VEREDICTO_ORIGEN;
-  let prompt = armar(topeVeredicto, conTexto);
-
-  while (prompt.length > TOPE_PROMPT_SEGUIMIENTO && conTexto > 0) {
-    conTexto--;
-    prompt = armar(topeVeredicto, conTexto);
-  }
-  while (prompt.length > TOPE_PROMPT_SEGUIMIENTO && topeVeredicto > 600) {
-    topeVeredicto = Math.floor(topeVeredicto / 2);
-    prompt = armar(topeVeredicto, conTexto);
-  }
-  return prompt;
+  return '--- ANTES EN ESTE MISMO ASUNTO ---\n' +
+    'El escudo de arriba se levantó HOY, para la pregunta de hoy. Lo que sigue son consultas ' +
+    'ANTERIORES sobre el mismo asunto, cada una con su propia tirada, que ya cumplieron.\n\n' +
+    entradas.join('\n\n') + '\n\n';
 }
 
 /* ==========================================================================
@@ -1546,15 +1506,28 @@ async function llamarGeminiConModelo(modelo, apiKey, prompt, conThinkingConfig) 
 
 /* Validación anti-alucinación: toda figura nombrada en el texto debe existir
    en alguna posición del escudo. Devuelve los nombres de figuras mencionadas
-   que NO están en la tirada (lista vacía = texto válido). */
-function figurasAlucinadas(texto, escudo) {
+   que NO están en la tirada (lista vacía = texto válido).
+
+   `escudosPrevios` son los de las consultas anteriores del hilo, y es una
+   relajación deliberada: al seguir un asunto se le PIDE al modelo (regla H2)
+   que nombre el Juez de una tirada anterior para compararlo con el de hoy. Sin
+   esto el validador lo tomaría por alucinación, gastaría los tres intentos y la
+   consulta terminaría sin lectura. Lo que sigue siendo estricto es lo que
+   importa: una figura que no está ni en la tirada de hoy ni en ninguna del hilo
+   se rechaza igual que siempre. */
+function figurasAlucinadas(texto, escudo, escudosPrevios) {
   const presentes = new Set();
-  const posiciones = escudo.madres.concat(
-    escudo.hijas,
-    escudo.sobrinas,
-    [escudo.testigoDerecho, escudo.testigoIzquierdo, escudo.juez, escudo.reconciliador]
-  );
-  posiciones.forEach(function (p) { presentes.add(figuraPorPuntos(p).nombre); });
+
+  const agregar = function (e) {
+    e.madres.concat(
+      e.hijas,
+      e.sobrinas,
+      [e.testigoDerecho, e.testigoIzquierdo, e.juez, e.reconciliador]
+    ).forEach(function (p) { presentes.add(figuraPorPuntos(p).nombre); });
+  };
+
+  agregar(escudo);
+  (escudosPrevios || []).forEach(agregar);
 
   return FIGURAS
     .filter(function (f) {
@@ -1685,6 +1658,11 @@ async function solicitarInterpretacion() {
   actualizarOfertaDeGuardado();
 
   const promptBase = construirPrompt();
+  // Al seguir un asunto, el modelo puede nombrar el Juez de una tirada anterior:
+  // se le pide en la regla H2. Esos escudos también cuentan como válidos.
+  const escudosPrevios = estado.hilo
+    ? estado.hilo.consultas.map(escudoDeConsulta)
+    : [];
   let notaCorrectiva = '';
   let ultimoError = null;
 
@@ -1697,7 +1675,7 @@ async function solicitarInterpretacion() {
       if (!texto) {
         throw new Error('El modelo devolvió una interpretación vacía.');
       }
-      const alucinadas = figurasAlucinadas(texto, estado.escudo);
+      const alucinadas = figurasAlucinadas(texto, estado.escudo, escudosPrevios);
       if (alucinadas.length) {
         notaCorrectiva = '\n\nATENCIÓN: en un intento anterior mencionaste figuras que NO están en esta tirada: ' +
           alucinadas.join(', ') + '. No las nombres. Usa solo las figuras listadas en los datos de arriba.';
@@ -1734,53 +1712,6 @@ async function solicitarInterpretacion() {
     (ultimoError ? ' Último error: ' + ultimoError.message : '');
   textoEl.innerHTML = '';
   reintentarBtn.hidden = false;
-}
-
-/* Igual que solicitarInterpretacion pero para una repregunta sobre una tirada
-   guardada: devuelve el texto en vez de escribirlo en la pantalla de resultado,
-   porque acá la UI la maneja la tarjeta de la bitácora.
-
-   Se conserva lo que importa: la validación anti-alucinación con nota
-   correctiva, y que si el modelo falla NO haya lectura de respaldo — el
-   seguimiento simplemente no se guarda. */
-async function pedirSeguimiento(raiz, seguimientos, preguntaNueva, alIntentar) {
-  const escudo = escudoDeConsulta(raiz);
-  const promptBase = construirPromptSeguimiento(raiz, seguimientos, preguntaNueva);
-  let notaCorrectiva = '';
-  let ultimoError = null;
-
-  // Queda en `estado` mientras dura la operación para que beforeSend lo tape.
-  // Lo limpia quien llama, recién cuando terminó de guardarlo y pintarlo.
-  estado.seguimiento = { pregunta: preguntaNueva, interpretacion: '' };
-
-  for (let intento = 1; intento <= MAX_INTENTOS_INTERPRETACION; intento++) {
-    if (alIntentar) alIntentar(intento);
-    try {
-      const texto = (await llamarGemini(promptBase + notaCorrectiva)).trim();
-      if (!texto) throw new Error('El modelo devolvió una interpretación vacía.');
-
-      const alucinadas = figurasAlucinadas(texto, escudo);
-      if (alucinadas.length) {
-        notaCorrectiva = '\n\nATENCIÓN: en un intento anterior mencionaste figuras que NO están en esta tirada: ' +
-          alucinadas.join(', ') + '. No las nombres. Usa solo las figuras listadas en los datos de arriba.';
-        throw new Error('La interpretación menciona figuras que no están en el escudo: ' + alucinadas.join(', '));
-      }
-
-      estado.seguimiento.interpretacion = texto;
-      return texto;
-    } catch (err) {
-      console.error('Intento ' + intento + ' de seguimiento fallido:', err);
-      ultimoError = err;
-    }
-  }
-
-  reportarError(ultimoError || new Error('Sin seguimiento tras todos los intentos'),
-    'seguimiento', {
-      intentos: MAX_INTENTOS_INTERPRETACION,
-      hubo_sesion: !!usuarioActual,
-      hubo_clave_propia: !!getApiKey(),
-    });
-  throw ultimoError || new Error('El oráculo no respondió tras ' + MAX_INTENTOS_INTERPRETACION + ' intentos.');
 }
 
 /* Marcas dentro de una línea: negritas, cursivas y código. Las negritas se
@@ -2323,8 +2254,8 @@ async function abrirBitacora() {
   estadoEl.textContent = 'Cargando…';
   listaEl.innerHTML = '';
 
-  document.getElementById('bloque-exportar').hidden = true;
-  document.getElementById('controles-bitacora').hidden = true;
+  ocultar('bloque-exportar');
+  ocultar('controles-bitacora');
 
   let consultas;
   try {
@@ -2346,18 +2277,20 @@ function renderizarBitacora() {
   const controles = document.getElementById('controles-bitacora');
   const bloqueExportar = document.getElementById('bloque-exportar');
 
+  const verSi = function (el, visible) { if (el) el.hidden = !visible; };
+
   listaEl.innerHTML = '';
   estadoEl.hidden = false;
 
   if (!consultasCargadas.length) {
     estadoEl.textContent = 'Todavía no hay consultas guardadas.';
-    controles.hidden = true;
-    bloqueExportar.hidden = true;
+    verSi(controles, false);
+    verSi(bloqueExportar, false);
     return;
   }
 
-  controles.hidden = false;
-  bloqueExportar.hidden = false;
+  verSi(controles, true);
+  verSi(bloqueExportar, true);
 
   const hilos = agruparEnHilos(consultasCargadas);
   // El filtro mira siempre la tirada original: filtrar fila por fila dejaría
@@ -2433,9 +2366,10 @@ function poblarFiltroTemas() {
   });
 }
 
+/* `cuantos` son las consultas que siguieron; el hilo las cuenta con la raíz. */
 function textoDeSeguimientos(cuantos) {
   if (!cuantos) return '';
-  return ' · ' + cuantos + (cuantos === 1 ? ' seguimiento' : ' seguimientos');
+  return ' · hilo de ' + (cuantos + 1) + ' consultas';
 }
 
 function crearTarjetaBitacora(consulta, seguimientos) {
@@ -2465,6 +2399,8 @@ function crearTarjetaBitacora(consulta, seguimientos) {
     (consulta.casa_tema ? ' (casa ' + consulta.casa_tema + ')' : '');
   cuerpo.appendChild(meta);
 
+  cuerpo.appendChild(crearBotonSeguirAsunto(consulta));
+
   const interp = document.createElement('div');
   interp.className = 'interpretacion-texto';
   interp.innerHTML = renderizarMarkdownBasico(consulta.interpretacion);
@@ -2473,25 +2409,32 @@ function crearTarjetaBitacora(consulta, seguimientos) {
   cuerpo.appendChild(crearEscudoDeConsulta(consulta));
   cuerpo.appendChild(crearFormularioVerificacion(consulta));
 
-  // El hilo de repreguntas sobre esta misma tirada, del más viejo al más nuevo.
-  const contenedorHilo = document.createElement('div');
-  contenedorHilo.className = 'hilo';
-  hilo.forEach(function (s) {
-    crearTarjetaSeguimiento(s, contenedorHilo);
-  });
-  cuerpo.appendChild(contenedorHilo);
+  // Las consultas siguientes del asunto, de la más vieja a la más nueva.
+  if (hilo.length) {
+    const contenedorHilo = document.createElement('div');
+    contenedorHilo.className = 'hilo';
 
-  cuerpo.appendChild(crearCajaSeguimiento(consulta, contenedorHilo, resumen, juez));
+    const titulo = document.createElement('h4');
+    titulo.className = 'titulo-hilo';
+    titulo.textContent = 'Después, en este mismo asunto';
+    contenedorHilo.appendChild(titulo);
+
+    hilo.forEach(function (s) {
+      crearTarjetaSeguimiento(s, contenedorHilo);
+    });
+    cuerpo.appendChild(contenedorHilo);
+  }
+
   cuerpo.appendChild(crearBorradoDeEntrada(consulta, item));
   item.appendChild(cuerpo);
   return item;
 }
 
-/* Tarjeta de un seguimiento dentro del hilo. Clase distinta de la tarjeta raíz
-   a propósito: anidar `.entrada-bitacora` dentro de sí misma rompería los
-   selectores de la lista. No repite el escudo — es el mismo de la tirada madre,
-   que ya está dibujado más arriba. */
+/* Tarjeta de un paso del hilo. Clase distinta de la tarjeta raíz a propósito:
+   anidar `.entrada-bitacora` dentro de sí misma rompería los selectores de la
+   lista. Lleva su propio escudo, porque cada paso es una tirada de verdad. */
 function crearTarjetaSeguimiento(consulta, contenedorHilo) {
+  const juez = figuraPorPuntos(consulta.juez);
   const item = document.createElement('details');
   item.className = 'entrada-hilo';
 
@@ -2503,18 +2446,21 @@ function crearTarjetaSeguimiento(consulta, contenedorHilo) {
     '<span class="marca-acierto ' + acierto + '"></span>';
   resumen.querySelector('.entrada-pregunta').textContent = consulta.pregunta;
   resumen.querySelector('.entrada-meta').textContent =
-    fechaLegible(consulta.creada_en) + ' · misma tirada';
+    fechaLegible(consulta.creada_en) + ' · Juez: ' + juez.nombre;
   resumen.querySelector('.marca-acierto').textContent = ETIQUETAS_ACIERTO[acierto];
   item.appendChild(resumen);
 
   const cuerpo = document.createElement('div');
   cuerpo.className = 'entrada-cuerpo';
 
+  cuerpo.appendChild(crearBotonSeguirAsunto(consulta));
+
   const interp = document.createElement('div');
   interp.className = 'interpretacion-texto';
   interp.innerHTML = renderizarMarkdownBasico(consulta.interpretacion);
   cuerpo.appendChild(interp);
 
+  cuerpo.appendChild(crearEscudoDeConsulta(consulta));
   cuerpo.appendChild(crearFormularioVerificacion(consulta));
   cuerpo.appendChild(crearBorradoDeEntrada(consulta, item));
   item.appendChild(cuerpo);
@@ -2523,103 +2469,43 @@ function crearTarjetaSeguimiento(consulta, contenedorHilo) {
   return item;
 }
 
-/* Caja para volver a preguntarle a una tirada guardada. Va dentro de la tarjeta
-   y no en una pantalla aparte: la persona ya está leyendo ahí el veredicto
-   anterior, y en el celular saltar de pantalla obliga a redibujar todo para
-   volver al mismo lugar. */
-function crearCajaSeguimiento(raiz, contenedorHilo, resumenRaiz, juez) {
-  const caja = document.createElement('div');
-  caja.className = 'seguimiento';
+/* Las consultas del asunto al que pertenece una fila, de la más vieja a la más
+   nueva, empezando por la raíz. */
+function pasosDelHilo(consulta) {
+  const raizId = consulta.origen_id || consulta.id;
+  return consultasCargadas
+    .filter(function (c) { return c.id === raizId || c.origen_id === raizId; })
+    .sort(function (a, b) { return new Date(a.creada_en) - new Date(b.creada_en); });
+}
 
-  const titulo = document.createElement('h4');
-  titulo.textContent = 'Preguntar sobre esta tirada';
-  caja.appendChild(titulo);
-
-  const guia = document.createElement('p');
-  guia.className = 'entrada-tema';
-  guia.textContent = 'No se levanta una tirada nueva: se relee este mismo escudo. ' +
-    'El oráculo verá la pregunta original, el veredicto que dio, lo que registraste que pasó ' +
-    'y las repreguntas anteriores.';
-  caja.appendChild(guia);
-
-  const area = document.createElement('textarea');
-  area.rows = 3;
-  area.maxLength = 1000;
-  area.placeholder = '¿Qué querés preguntarle a esta misma tirada?';
-  caja.appendChild(area);
-
-  const contador = document.createElement('p');
-  contador.className = 'contador-caracteres';
-  contador.textContent = '0 / 1000';
-  area.addEventListener('input', function () {
-    contador.textContent = area.value.length + ' / 1000';
-  });
-  caja.appendChild(contador);
-
+/* Seguir un asunto abre el flujo normal de consulta con el hilo cargado: se
+   traza un escudo nuevo, pero la interpretación se pide sabiendo lo anterior.
+   Va arriba del cuerpo de la tarjeta y no al final: enterrado bajo el escudo y
+   la verificación, nadie lo encontraba. */
+function crearBotonSeguirAsunto(consulta) {
   const boton = document.createElement('button');
   boton.type = 'button';
-  boton.className = 'btn btn-secundario btn-preguntar-seguimiento';
-  boton.textContent = 'Preguntar al oráculo';
-  caja.appendChild(boton);
+  boton.className = 'btn btn-secundario btn-seguir-asunto';
+  boton.textContent = 'Seguir este asunto';
 
-  const aviso = document.createElement('p');
-  aviso.className = 'aviso-guardado';
-  aviso.hidden = true;
-  caja.appendChild(aviso);
+  boton.addEventListener('click', function () {
+    const pasos = pasosDelHilo(consulta);
+    estado.hilo = {
+      raizId: consulta.origen_id || consulta.id,
+      consultas: pasos,
+    };
+    estado.tema = TEMAS.find(function (t) { return t.id === consulta.tema_id; }) || estado.tema;
 
-  boton.addEventListener('click', async function () {
-    const pregunta = area.value.trim();
-    if (!pregunta) {
-      aviso.textContent = 'Escribí una pregunta antes de consultar.';
-      aviso.hidden = false;
-      return;
-    }
+    const select = document.getElementById('select-tema');
+    if (select) select.value = estado.tema.id;
 
-    boton.disabled = true;
-    area.disabled = true;
-    aviso.hidden = true;
-
-    // Lo que ya hay en el hilo, en el mismo orden en que se leería.
-    const previos = consultasCargadas
-      .filter(function (c) { return c.origen_id === raiz.id; })
-      .sort(function (a, b) { return new Date(a.creada_en) - new Date(b.creada_en); });
-
-    try {
-      const texto = await pedirSeguimiento(raiz, previos, pregunta, function (intento) {
-        boton.textContent = intento === 1
-          ? 'Consultando al oráculo…'
-          : 'Reintentando (intento ' + intento + ' de ' + MAX_INTENTOS_INTERPRETACION + ')…';
-      });
-
-      boton.textContent = 'Guardando…';
-      const fila = await guardarSeguimientoEnBitacora(raiz, pregunta, texto);
-      if (!fila) throw new Error('No se pudo guardar el seguimiento en la bitácora.');
-
-      consultasCargadas.push(fila);
-      crearTarjetaSeguimiento(fila, contenedorHilo);
-
-      const cuantos = consultasCargadas.filter(function (c) { return c.origen_id === raiz.id; }).length;
-      if (resumenRaiz && juez) {
-        resumenRaiz.querySelector('.entrada-meta').textContent =
-          fechaLegible(raiz.creada_en) + ' · Juez: ' + juez.nombre + textoDeSeguimientos(cuantos);
-      }
-
-      area.value = '';
-      contador.textContent = '0 / 1000';
-    } catch (err) {
-      // Si el oráculo falla no se guarda nada: no hay lectura de respaldo.
-      console.error('No se pudo completar el seguimiento:', err);
-      aviso.textContent = 'No se pudo consultar: ' + err.message;
-      aviso.hidden = false;
-    } finally {
-      estado.seguimiento = { pregunta: '', interpretacion: '' };
-      boton.disabled = false;
-      area.disabled = false;
-      boton.textContent = 'Preguntar al oráculo';
-    }
+    // La pregunta anterior no se arrastra: la nueva es otra.
+    // irAPantallaPregunta la limpia y ya refresca el cartel del hilo.
+    estado.preguntaConsumida = true;
+    irAPantallaPregunta();
   });
 
-  return caja;
+  return boton;
 }
 
 /* ==========================================================================
@@ -2654,11 +2540,10 @@ function bitacoraAMarkdown(consultas) {
   }
   lineas.push('');
 
-  hilos.forEach(function (h, i) {
-    const c = h.raiz;
-    lineas.push('---');
-    lineas.push('');
-    lineas.push('## ' + (i + 1) + '. ' + c.pregunta);
+  /* Cada paso de un hilo es una tirada propia, así que se escribe con el mismo
+     detalle que una consulta suelta. `titulo` distingue la raíz del seguimiento. */
+  const escribirConsulta = function (c, titulo) {
+    lineas.push(titulo);
     lineas.push('');
     lineas.push('**Fecha:** ' + fechaLegible(c.creada_en));
     lineas.push('**Tema:** ' + c.tema_etiqueta + (c.casa_tema ? ' (casa ' + c.casa_tema + ')' : ''));
@@ -2692,19 +2577,16 @@ function bitacoraAMarkdown(consultas) {
     lineas.push('');
     lineas.push(c.resultado_real || '(sin verificar)');
     lineas.push('');
+  };
 
-    // Las repreguntas no repiten las 16 figuras: es el mismo escudo de arriba.
+  hilos.forEach(function (h, i) {
+    lineas.push('---');
+    lineas.push('');
+    escribirConsulta(h.raiz, '## ' + (i + 1) + '. ' + h.raiz.pregunta);
+
     h.seguimientos.forEach(function (s, j) {
-      lineas.push('### Seguimiento ' + (i + 1) + '.' + (j + 1) + ' — ' + s.pregunta);
-      lineas.push('');
-      lineas.push('**Fecha:** ' + fechaLegible(s.creada_en));
-      lineas.push('**Mismo escudo que la tirada ' + (i + 1) + '.**');
-      lineas.push('**Resultado registrado:** ' + (ETIQUETAS_ACIERTO[s.acierto || 'sin_verificar']));
-      lineas.push('');
-      lineas.push(s.interpretacion || '(sin interpretación)');
-      lineas.push('');
-      lineas.push('**Qué ocurrió realmente:** ' + (s.resultado_real || '(sin verificar)'));
-      lineas.push('');
+      escribirConsulta(s, '## ' + (i + 1) + '.' + (j + 1) +
+        ' — Seguimiento de «' + h.raiz.pregunta + '»: ' + s.pregunta);
     });
   });
 
@@ -2880,8 +2762,8 @@ function crearBorradoDeEntrada(consulta, item) {
         const estadoEl = document.getElementById('estado-bitacora');
         estadoEl.textContent = 'Todavía no hay consultas guardadas.';
         estadoEl.hidden = false;
-        document.getElementById('controles-bitacora').hidden = true;
-        document.getElementById('bloque-exportar').hidden = true;
+        ocultar('controles-bitacora');
+        ocultar('bloque-exportar');
       }
     } catch (err) {
       console.error('No se pudo eliminar la consulta:', err);
@@ -3127,6 +3009,7 @@ function irAPantallaPregunta() {
     ocultarPanelRevision();
   }
   document.getElementById('error-pregunta').hidden = true;
+  actualizarCartelHilo();
   mostrarPantalla('pantalla-pregunta');
 }
 
@@ -3137,6 +3020,9 @@ function reiniciarConsulta(mantenerPregunta) {
     document.getElementById('input-pregunta').value = '';
     actualizarContadorPregunta();
     ocultarPanelRevision();
+    // Una consulta nueva de cero sale del hilo. Reintentar la interpretación
+    // (mantenerPregunta) no: eso sigue siendo el mismo paso del asunto.
+    salirDelHilo();
   }
   estado.lineas = [];
   estado.escudo = null;
@@ -3149,37 +3035,99 @@ function reiniciarConsulta(mantenerPregunta) {
 }
 
 /* ==========================================================================
+   EL CARTEL DEL HILO
+
+   Cuando se sigue un asunto, la pantalla de pregunta y la de resultado dicen
+   cuál es. Sin esto no habría forma de saber que la consulta en curso arrastra
+   el contexto de las anteriores.
+   ========================================================================== */
+
+function salirDelHilo() {
+  estado.hilo = null;
+  actualizarCartelHilo();
+}
+
+function actualizarCartelHilo() {
+  ['cartel-hilo-pregunta', 'cartel-hilo-resultado'].forEach(function (id) {
+    const cartel = document.getElementById(id);
+    if (!cartel) return;
+
+    if (!estado.hilo || !estado.hilo.consultas.length) {
+      cartel.hidden = true;
+      cartel.innerHTML = '';
+      return;
+    }
+
+    const pasos = estado.hilo.consultas;
+    const raiz = pasos[0];
+    const ultima = pasos[pasos.length - 1];
+
+    cartel.innerHTML =
+      '<p class="cartel-hilo-titulo">Seguís este asunto</p>' +
+      '<p class="cartel-hilo-pregunta"></p>' +
+      '<p class="cartel-hilo-meta"></p>';
+    cartel.querySelector('.cartel-hilo-pregunta').textContent = '«' + raiz.pregunta + '»';
+    cartel.querySelector('.cartel-hilo-meta').textContent =
+      pasos.length + (pasos.length === 1 ? ' consulta previa · ' : ' consultas previas · ') +
+      'la última el ' + fechaCortaDeIso(ultima.creada_en);
+
+    const salir = document.createElement('button');
+    salir.type = 'button';
+    salir.className = 'btn-enlace';
+    salir.textContent = 'Salir del hilo';
+    salir.addEventListener('click', salirDelHilo);
+    cartel.appendChild(salir);
+
+    cartel.hidden = false;
+  });
+}
+
+/* ==========================================================================
    EVENTOS
    ========================================================================== */
+
+/* Engancha un manejador sin que un elemento ausente tumbe el resto del arranque.
+
+   `inicializar()` encadena decenas de addEventListener. Si el service worker
+   sirve un index.html viejo junto a un app.js nuevo, un solo getElementById que
+   devuelva null tira TypeError y TODOS los listeners siguientes quedan sin
+   registrar: botones que están en la pantalla y no responden a nada. */
+function alTocar(id, manejador, evento) {
+  const el = document.getElementById(id);
+  if (!el) {
+    console.warn('Falta el elemento', id, '— no se pudo enganchar su manejador.');
+    return;
+  }
+  el.addEventListener(evento || 'click', manejador);
+}
 
 function inicializar() {
   iniciarSentry();
   actualizarUiSentry();
-  document.getElementById('btn-probar-sentry').addEventListener('click', probarSentry);
+  alTocar('btn-probar-sentry', probarSentry);
   poblarSelectTemas();
   inicializarSesion();
 
-  const inputPregunta = document.getElementById('input-pregunta');
-  inputPregunta.addEventListener('input', actualizarContadorPregunta);
-  document.getElementById('btn-revisar-pregunta').addEventListener('click', revisarPreguntaDesdeFormulario);
+  alTocar('input-pregunta', actualizarContadorPregunta, 'input');
+  alTocar('btn-revisar-pregunta', revisarPreguntaDesdeFormulario);
   actualizarContadorPregunta();
 
-  document.getElementById('btn-sesion').addEventListener('click', function () {
+  alTocar('btn-sesion', function () {
     document.getElementById('error-email').hidden = true;
     mostrarErrorSesion('');
     mostrarPantalla('pantalla-sesion');
   });
 
-  document.getElementById('btn-volver-sesion').addEventListener('click', function () {
+  alTocar('btn-volver-sesion', function () {
     mostrarPantalla('pantalla-inicio');
   });
 
-  document.getElementById('btn-entrar').addEventListener('click', entrarDesdeFormulario);
-  document.getElementById('btn-crear-cuenta').addEventListener('click', crearCuentaDesdeFormulario);
+  alTocar('btn-entrar', entrarDesdeFormulario);
+  alTocar('btn-crear-cuenta', crearCuentaDesdeFormulario);
 
   // Para ver si el celular autocompletó una contraseña distinta a la esperada
   // (Safari y Chrome guardan credenciales por separado).
-  document.getElementById('btn-ver-password').addEventListener('click', function () {
+  alTocar('btn-ver-password', function () {
     const input = document.getElementById('input-password');
     const verlo = input.type === 'password';
     input.type = verlo ? 'text' : 'password';
@@ -3189,36 +3137,38 @@ function inicializar() {
 
   // Enter en cualquiera de los dos campos entra directo.
   ['input-email', 'input-password'].forEach(function (id) {
-    document.getElementById(id).addEventListener('keydown', function (ev) {
+    alTocar(id, function (ev) {
       if (ev.key === 'Enter') entrarDesdeFormulario();
-    });
+    }, 'keydown');
   });
 
-  document.getElementById('btn-bitacora').addEventListener('click', abrirBitacora);
+  alTocar('btn-bitacora', abrirBitacora);
 
   poblarFiltroTemas();
-  document.getElementById('filtro-tema').addEventListener('change', function () {
+  alTocar('filtro-tema', function () {
     filtroTemaBitacora = this.value;
     renderizarBitacora();
-  });
-  document.getElementById('orden-bitacora').addEventListener('change', function () {
+  }, 'change');
+  alTocar('orden-bitacora', function () {
     ordenBitacora = this.value;
     renderizarBitacora();
-  });
+  }, 'change');
 
-  document.getElementById('btn-volver-bitacora').addEventListener('click', function () {
+  alTocar('btn-volver-bitacora', function () {
     mostrarPantalla('pantalla-inicio');
   });
 
-  document.getElementById('btn-exportar-md').addEventListener('click', exportarBitacoraMarkdown);
-  document.getElementById('btn-exportar-json').addEventListener('click', exportarBitacoraJson);
+  alTocar('btn-exportar-md', exportarBitacoraMarkdown);
+  alTocar('btn-exportar-json', exportarBitacoraJson);
 
-  document.getElementById('btn-cerrar-sesion').addEventListener('click', async function () {
+  alTocar('btn-cerrar-sesion', async function () {
     await cerrarSesion();
     mostrarPantalla('pantalla-inicio');
   });
 
-  document.getElementById('btn-comenzar').addEventListener('click', function () {
+  alTocar('btn-comenzar', function () {
+    // Empezar de cero desde el inicio nunca continúa un asunto.
+    salirDelHilo();
     if (!getApiKey()) {
       abrirPantallaClave('pantalla-pregunta');
       return;
@@ -3226,24 +3176,24 @@ function inicializar() {
     irAPantallaPregunta();
   });
 
-  document.getElementById('btn-config-api-key').addEventListener('click', function () {
+  alTocar('btn-config-api-key', function () {
     abrirPantallaClave('pantalla-inicio');
   });
 
-  document.getElementById('btn-guardar-api-key').addEventListener('click', guardarApiKeyDesdeFormulario);
+  alTocar('btn-guardar-api-key', guardarApiKeyDesdeFormulario);
 
-  document.getElementById('btn-cancelar-api-key').addEventListener('click', salirDePantallaClave);
+  alTocar('btn-cancelar-api-key', salirDePantallaClave);
 
-  document.getElementById('btn-borrar-api-key').addEventListener('click', function () {
+  alTocar('btn-borrar-api-key', function () {
     borrarApiKey();
     mostrarPantalla('pantalla-inicio');
   });
 
-  document.getElementById('btn-atras-pregunta').addEventListener('click', function () {
+  alTocar('btn-atras-pregunta', function () {
     mostrarPantalla('pantalla-inicio');
   });
 
-  document.getElementById('btn-a-generacion').addEventListener('click', function () {
+  alTocar('btn-a-generacion', function () {
     const texto = document.getElementById('input-pregunta').value.trim();
     const errorEl = document.getElementById('error-pregunta');
     if (!texto) {
@@ -3259,11 +3209,11 @@ function inicializar() {
     iniciarGeneracion();
   });
 
-  document.getElementById('btn-reintentar').addEventListener('click', solicitarInterpretacion);
-  document.getElementById('btn-nueva-interpretacion').addEventListener('click', solicitarInterpretacion);
-  document.getElementById('btn-copiar-md').addEventListener('click', copiarLectura);
-  document.getElementById('btn-guardar-bitacora').addEventListener('click', alternarGuardadoDeConsulta);
-  document.getElementById('btn-nueva-consulta').addEventListener('click', function () { reiniciarConsulta(false); });
+  alTocar('btn-reintentar', solicitarInterpretacion);
+  alTocar('btn-nueva-interpretacion', solicitarInterpretacion);
+  alTocar('btn-copiar-md', copiarLectura);
+  alTocar('btn-guardar-bitacora', alternarGuardadoDeConsulta);
+  alTocar('btn-nueva-consulta', function () { reiniciarConsulta(false); });
 }
 
 /* Service worker: hace que la app abra sin conexión y se pueda instalar en la
