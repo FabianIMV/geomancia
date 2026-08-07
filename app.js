@@ -416,6 +416,33 @@ async function guardarVerificacion(id, resultadoReal, acierto) {
    DATOS: LAS 16 FIGURAS GEOMÁNTICAS
    Cada figura: 4 filas [cabeza, cuello, cuerpo, pies].
    1 = punto simple (impar / activo). 2 = punto doble (par / pasivo).
+
+   `puntos` — CORREGIDO. La tabla original (primer commit del proyecto,
+   nunca revisada) asignaba binarios equivocados: solo Via y Populus
+   coincidían con la correspondencia real. Se reescribió entera y se
+   verificó con dos propiedades estructurales independientes, ambas
+   comprobadas en scripts/verify-figures.js:
+     (a) las únicas figuras verticalmente simétricas son Populus, Via,
+         Coniunctio y Carcer;
+     (b) Laetitia, Rubeus, Albus y Tristitia son las únicas con una sola
+         línea activa, en Fuego, Aire, Agua y Tierra respectivamente.
+   Los binarios guardados en Supabase nunca estuvieron mal: la matemática
+   del escudo (calcularEscudo) es correcta y no se toca. Lo que estaba mal
+   es esta tabla de nombres, y por lo tanto el texto que la IA generaba a
+   partir de ella. Las consultas ya guardadas pueden mostrar ahora un
+   escudo con nombres distintos de los que menciona su propia
+   interpretación — es exactamente lo esperado, no un dato corrupto (ver
+   interpretacionDesactualizada más abajo).
+
+   `elemento` — PARCIALMENTE CORREGIDO. Se corrigieron los cuatro casos que
+   la propiedad (b) determina sin ambigüedad (Laetitia=Fuego, Rubeus=Aire,
+   Albus=Agua, Tristitia=Tierra: la posición de su única línea activa lo
+   fija). Las otras doce quedan con el valor de la tabla original, SIN
+   VERIFICAR: la atribución elemental (y la planetaria, en las 16) varía
+   entre tradiciones (Agrippa, Golden Dawn, la escuela árabe) y no se
+   deriva matemáticamente del binario. Decidir una fuente para esas doce es
+   una tarea aparte. `planeta`, `signo`, `naturaleza`, `significado` y
+   `traduccion` tampoco están verificados contra ninguna fuente.
    ========================================================================== */
 
 const FIGURAS = [
@@ -449,7 +476,7 @@ const FIGURAS = [
     id: 'fortuna-major',
     nombre: 'Fortuna Major',
     traduccion: 'La Fortuna Mayor',
-    puntos: [1, 2, 2, 1],
+    puntos: [2, 2, 1, 1],
     elemento: 'Tierra',
     planeta: 'Sol',
     signo: 'Leo',
@@ -462,7 +489,7 @@ const FIGURAS = [
     id: 'fortuna-minor',
     nombre: 'Fortuna Minor',
     traduccion: 'La Fortuna Menor',
-    puntos: [2, 1, 1, 2],
+    puntos: [1, 1, 2, 2],
     elemento: 'Fuego',
     planeta: 'Sol',
     signo: 'Leo',
@@ -475,7 +502,7 @@ const FIGURAS = [
     id: 'acquisitio',
     nombre: 'Acquisitio',
     traduccion: 'La Ganancia',
-    puntos: [2, 1, 1, 1],
+    puntos: [2, 1, 2, 1],
     elemento: 'Fuego',
     planeta: 'Júpiter',
     signo: 'Sagitario',
@@ -488,7 +515,7 @@ const FIGURAS = [
     id: 'amissio',
     nombre: 'Amissio',
     traduccion: 'La Pérdida',
-    puntos: [1, 2, 2, 2],
+    puntos: [1, 2, 1, 2],
     elemento: 'Tierra',
     planeta: 'Venus',
     signo: 'Tauro',
@@ -501,8 +528,8 @@ const FIGURAS = [
     id: 'albus',
     nombre: 'Albus',
     traduccion: 'El Blanco',
-    puntos: [2, 1, 2, 2],
-    elemento: 'Aire',
+    puntos: [2, 2, 1, 2],
+    elemento: 'Agua',
     planeta: 'Mercurio',
     signo: 'Géminis',
     naturaleza: 'favorable',
@@ -514,8 +541,8 @@ const FIGURAS = [
     id: 'rubeus',
     nombre: 'Rubeus',
     traduccion: 'El Rojo',
-    puntos: [1, 2, 1, 1],
-    elemento: 'Agua',
+    puntos: [2, 1, 2, 2],
+    elemento: 'Aire',
     planeta: 'Marte',
     signo: 'Escorpio',
     naturaleza: 'desfavorable',
@@ -527,7 +554,7 @@ const FIGURAS = [
     id: 'puella',
     nombre: 'Puella',
     traduccion: 'La Niña',
-    puntos: [1, 2, 1, 2],
+    puntos: [1, 2, 1, 1],
     elemento: 'Aire',
     planeta: 'Venus',
     signo: 'Libra',
@@ -540,7 +567,7 @@ const FIGURAS = [
     id: 'puer',
     nombre: 'Puer',
     traduccion: 'El Niño',
-    puntos: [2, 1, 2, 1],
+    puntos: [1, 1, 2, 1],
     elemento: 'Fuego',
     planeta: 'Marte',
     signo: 'Aries',
@@ -553,7 +580,7 @@ const FIGURAS = [
     id: 'coniunctio',
     nombre: 'Coniunctio',
     traduccion: 'La Unión',
-    puntos: [1, 1, 2, 1],
+    puntos: [2, 1, 1, 2],
     elemento: 'Tierra',
     planeta: 'Mercurio',
     signo: 'Virgo',
@@ -566,7 +593,7 @@ const FIGURAS = [
     id: 'carcer',
     nombre: 'Carcer',
     traduccion: 'La Cárcel',
-    puntos: [2, 2, 1, 2],
+    puntos: [1, 2, 2, 1],
     elemento: 'Tierra',
     planeta: 'Saturno',
     signo: 'Capricornio',
@@ -579,7 +606,7 @@ const FIGURAS = [
     id: 'tristitia',
     nombre: 'Tristitia',
     traduccion: 'La Tristeza',
-    puntos: [1, 1, 2, 2],
+    puntos: [2, 2, 2, 1],
     elemento: 'Tierra',
     planeta: 'Saturno',
     signo: 'Acuario',
@@ -592,8 +619,8 @@ const FIGURAS = [
     id: 'laetitia',
     nombre: 'Laetitia',
     traduccion: 'La Alegría',
-    puntos: [2, 2, 1, 1],
-    elemento: 'Agua',
+    puntos: [1, 2, 2, 2],
+    elemento: 'Fuego',
     planeta: 'Júpiter',
     signo: 'Piscis',
     naturaleza: 'favorable',
@@ -605,7 +632,7 @@ const FIGURAS = [
     id: 'caput-draconis',
     nombre: 'Caput Draconis',
     traduccion: 'Cabeza del Dragón',
-    puntos: [1, 1, 1, 2],
+    puntos: [2, 1, 1, 1],
     elemento: 'Tierra',
     planeta: 'Nodo Norte',
     signo: 'Virgo',
@@ -618,7 +645,7 @@ const FIGURAS = [
     id: 'cauda-draconis',
     nombre: 'Cauda Draconis',
     traduccion: 'Cola del Dragón',
-    puntos: [2, 2, 2, 1],
+    puntos: [1, 1, 1, 2],
     elemento: 'Fuego',
     planeta: 'Nodo Sur',
     signo: 'Sagitario',
@@ -726,6 +753,84 @@ function calcularEscudo(madres) {
     reconciliador: reconciliador,
     casas: casas,
   };
+}
+
+/* Todas las posiciones del escudo con su etiqueta: ['Madre 1', puntos], etc.
+   Base para la lista blanca/negra del prompt, las repeticiones y la revisión
+   de asignaciones por casa. */
+function posicionesDeEscudo(escudo, casas) {
+  const pares = [];
+  escudo.madres.forEach(function (f, i) { pares.push(['Madre ' + (i + 1), f]); });
+  escudo.hijas.forEach(function (f, i) { pares.push(['Hija ' + (i + 1), f]); });
+  escudo.sobrinas.forEach(function (f, i) { pares.push(['Sobrina ' + (i + 1), f]); });
+  pares.push(['Testigo Derecho', escudo.testigoDerecho]);
+  pares.push(['Testigo Izquierdo', escudo.testigoIzquierdo]);
+  pares.push(['Juez', escudo.juez]);
+  pares.push(['Reconciliador', escudo.reconciliador]);
+  (casas || []).forEach(function (f, i) { pares.push(['Casa ' + (i + 1), f]); });
+  return pares;
+}
+
+/* Qué figura se repite y en qué posiciones. Se calcula en JavaScript, no se
+   le pide al modelo que la descubra por su cuenta (antes, regla 9 dejaba
+   la detección librada al modelo). */
+function detectarRepeticiones(escudo, casas) {
+  const mapa = {};
+  posicionesDeEscudo(escudo, casas).forEach(function (par) {
+    const nombre = figuraPorPuntos(par[1]).nombre;
+    (mapa[nombre] = mapa[nombre] || []).push(par[0]);
+  });
+
+  return Object.keys(mapa)
+    .filter(function (n) { return mapa[n].length > 1; })
+    .sort(function (a, b) { return mapa[b].length - mapa[a].length; })
+    .map(function (n) { return n + ' aparece ' + mapa[n].length + ' veces: ' + mapa[n].join(', ') + '.'; });
+}
+
+/* Recalcula el escudo desde las madres y compara con lo que trae el objeto.
+   Devuelve un array de discrepancias (vacío si todo cuadra).
+
+   NO se usa en la consulta en vivo: ahí `estado.escudo` es tautológicamente
+   el resultado de calcularEscudo() recién llamado, no hay nada que pueda
+   haberse desalineado todavía. Sí importa para datos que vienen de
+   Supabase —un paso previo de un hilo, o una fila auditada— porque esos
+   sí pueden estar corruptos o mal migrados. Ver pasosDelHilo() e
+   interpretacionDesactualizada(). */
+function verificarEscudo(escudo) {
+  const problemas = [];
+  let esperado;
+  try {
+    esperado = calcularEscudo(escudo.madres);
+  } catch (err) {
+    return ['No se pudo recalcular el escudo: ' + err.message];
+  }
+
+  const comparar = function (etiqueta, real, calculada) {
+    if (!real) { problemas.push(etiqueta + ': falta en los datos.'); return; }
+    const a = real.join('');
+    const b = calculada.join('');
+    if (a !== b) {
+      let nombreReal = '?';
+      let nombreCalculado = '?';
+      try { nombreReal = figuraPorPuntos(real).nombre; } catch (err) { /* patrón inválido */ }
+      try { nombreCalculado = figuraPorPuntos(calculada).nombre; } catch (err) { /* patrón inválido */ }
+      problemas.push(etiqueta + ': guardado ' + a + ' (' + nombreReal + ') ' +
+        'pero corresponde ' + b + ' (' + nombreCalculado + ').');
+    }
+  };
+
+  esperado.hijas.forEach(function (f, i) { comparar('Hija ' + (i + 1), (escudo.hijas || [])[i], f); });
+  esperado.sobrinas.forEach(function (f, i) { comparar('Sobrina ' + (i + 1), (escudo.sobrinas || [])[i], f); });
+  comparar('Testigo Derecho', escudo.testigoDerecho, esperado.testigoDerecho);
+  comparar('Testigo Izquierdo', escudo.testigoIzquierdo, esperado.testigoIzquierdo);
+  comparar('Juez', escudo.juez, esperado.juez);
+  comparar('Reconciliador', escudo.reconciliador, esperado.reconciliador);
+
+  if (escudo.casas) {
+    esperado.casas.forEach(function (f, i) { comparar('Casa ' + (i + 1), escudo.casas[i], f); });
+  }
+
+  return problemas;
 }
 
 /* ==========================================================================
@@ -1060,16 +1165,24 @@ const INSTRUCCIONES_SISTEMA =
   '10. ANCLAJE A LOS DATOS: usa EXCLUSIVAMENTE las figuras provistas en los datos de esta tirada. NUNCA menciones el nombre de una figura geomántica que no aparezca literalmente en los datos entregados — ni siquiera para compararla, contrastarla o ponerla de ejemplo. NUNCA inventes posiciones, casas o figuras fuera del schema provisto. Si hablas de una casa, usa exactamente la figura que la carta de 12 casas lista para esa casa.\n' +
   '11. No infieras ni asumas el estado emocional del consultante a partir de la pregunta. Interpreta la tirada, no a la persona.\n' +
   '12. Si la pregunta pide CUÁNDO ocurrirá algo (un timing, una fecha o un plazo), señala explícitamente que la geomancia clásica de este sistema no calcula fechas ni plazos: juzga la tendencia y la condición del asunto. Da el veredicto sobre hacia dónde se inclina el asunto, pero NO inventes tiempos, meses ni cantidades de días.\n' +
-  '13. Responde EXCLUSIVAMENTE en español.';
+  '13. AGENCIA. Distingue con claridad qué parte del desenlace depende de la otra parte y qué parte depende del consultante, y apóyalo en qué Testigo lo sostiene. No atribuyas la iniciativa a la otra parte si el Testigo Izquierdo no lo respalda.\n' +
+  '14. Si al leer los datos encuentras una contradicción interna, dilo abiertamente en lugar de resolverla inventando. Nunca rellenes un vacío con una figura plausible.\n' +
+  '15. Responde EXCLUSIVAMENTE en español.';
 
+/* El binario va pegado al nombre, entre corchetes: el modelo ve el dato duro
+   junto al nombre y no puede sustituir uno sin contradecir al otro. */
 function describirFigura(puntos) {
   const f = figuraPorPuntos(puntos);
-  return f.nombre + ' (' + f.traduccion + ', ' + f.naturaleza + ', elemento ' + f.elemento + ', planeta ' + f.planeta + ')';
+  return '[' + puntos.join('·') + '] ' + f.nombre +
+    ' (' + f.traduccion + ', ' + f.naturaleza + ', elemento ' + f.elemento + ', planeta ' + f.planeta + ')';
 }
 
-/* Los dos bloques de datos que van a cualquier prompt: las 16 posiciones del
-   escudo y la carta de casas. Se arman aparte porque el seguimiento los necesita
-   idénticos, pero leyendo de una fila guardada en vez de `estado`. */
+/* Los bloques de datos que van a cualquier prompt: las 16 posiciones del
+   escudo, la carta de casas, la lista blanca/negra de figuras (con el
+   binario ya delator de cualquier sustitución) y las repeticiones, ya
+   calculadas — no a discreción del modelo. Se arman aparte porque el
+   seguimiento los necesita idénticos, pero leyendo de una fila guardada en
+   vez de `estado`. */
 function bloquesDeTirada(escudo, casas, casaRelevante) {
   const bloqueEscudo = [
     'Madre 1: ' + describirFigura(escudo.madres[0]),
@@ -1095,7 +1208,31 @@ function bloquesDeTirada(escudo, casas, casaRelevante) {
     return 'Casa ' + casaInfo.numero + ' (' + casaInfo.significado + '): ' + describirFigura(casas[idx]) + marca;
   }).join('\n');
 
-  return { bloqueEscudo: bloqueEscudo, bloqueCasas: bloqueCasas };
+  const presentes = [];
+  posicionesDeEscudo(escudo, casas).forEach(function (par) {
+    const nombre = figuraPorPuntos(par[1]).nombre;
+    if (presentes.indexOf(nombre) === -1) presentes.push(nombre);
+  });
+  const ausentes = FIGURAS.map(function (f) { return f.nombre; })
+    .filter(function (n) { return presentes.indexOf(n) === -1; });
+
+  const bloqueListaNegra =
+    '--- FIGURAS AUSENTES EN ESTA TIRADA (prohibido nombrarlas, ni para comparar) ---\n' +
+    (ausentes.length ? ausentes.join(', ') : '(ninguna: esta tirada usa las 16)');
+
+  const repeticiones = detectarRepeticiones(escudo, casas);
+  const bloqueRepeticiones =
+    '--- REPETICIONES YA CALCULADAS (no las recuentes, úsalas tal cual) ---\n' +
+    (repeticiones.length ? repeticiones.join('\n') : 'Ninguna figura se repite en esta tirada.');
+
+  return {
+    bloqueEscudo: bloqueEscudo,
+    bloqueCasas: bloqueCasas,
+    bloqueListaNegra: bloqueListaNegra,
+    bloqueRepeticiones: bloqueRepeticiones,
+    presentes: presentes,
+    ausentes: ausentes,
+  };
 }
 
 function construirPrompt() {
@@ -1109,6 +1246,16 @@ function construirPrompt() {
   const bloqueEscudo = bloques.bloqueEscudo;
   const bloqueCasas = bloques.bloqueCasas;
 
+  // Con hilo activo, la prohibición de la lista negra es sobre el escudo de
+  // HOY únicamente: la regla H2 pide, aparte, nombrar una figura de una
+  // tirada anterior si se aclara que es de aquella tirada. Sin hilo, la
+  // prohibición es absoluta.
+  const notaListaNegra = estado.hilo
+    ? '\n(Esto es sobre el escudo de HOY. Si necesitas nombrar una figura de una ' +
+      'tirada anterior de este mismo asunto, podés hacerlo — aclarando que es de ' +
+      'aquella tirada, como pide la regla H2 — aunque esté en esta lista.)'
+    : '';
+
   const armar = function (bloqueHilo) {
     return INSTRUCCIONES_SISTEMA + (bloqueHilo ? INSTRUCCIONES_HILO : '') + '\n\n' +
       '--- CONSULTA ---\n' +
@@ -1119,6 +1266,8 @@ function construirPrompt() {
       '--- CARTA DE 12 CASAS (figura asignada a cada casa) ---\n' + bloqueCasas + '\n\n' +
       '--- FIGURA EN LA CASA DEL TEMA ---\n' + figuraCasaRelevante + '\n\n' +
       '--- FIGURA EN CASA 1 (el consultante) ---\n' + figuraCasa1 + '\n\n' +
+      bloques.bloqueListaNegra + notaListaNegra + '\n\n' +
+      bloques.bloqueRepeticiones + '\n\n' +
       (bloqueHilo || '') +
       'Redacta la interpretación siguiendo exactamente la jerarquía y estructura indicadas en las reglas. ' +
       'Recuerda: solo puedes nombrar figuras que aparezcan literalmente en los datos de arriba.';
@@ -1150,7 +1299,9 @@ function construirPrompt() {
    ========================================================================== */
 
 /* La fila guardada usa snake_case; el resto del código (y el validador
-   anti-alucinación) espera el escudo en camelCase. */
+   anti-alucinación) espera el escudo en camelCase. Incluye `casas` para que
+   verificarEscudo() e interpretacionDesactualizada() puedan comparar también
+   la carta de 12 casas, no solo las 7 posiciones nombradas. */
 function escudoDeConsulta(c) {
   return {
     madres: c.madres,
@@ -1160,7 +1311,41 @@ function escudoDeConsulta(c) {
     testigoIzquierdo: c.testigo_izquierdo,
     juez: c.juez,
     reconciliador: c.reconciliador,
+    casas: c.casas,
   };
+}
+
+/* Compara el texto de una consulta guardada contra lo que la tabla ACTUAL de
+   figuras dice hoy. Es de solo lectura: no toca la base ni migra nada. Sirve
+   para marcar lecturas cuya interpretación quedó desalineada por la
+   corrección de la tabla FIGURAS (ver el comentario en su declaración) —
+   el escudo guardado es correcto, lo que cambió es qué nombre le
+   corresponde a cada binario.
+
+   No está conectada a ninguna pantalla todavía: la estrategia de UI y de
+   qué hacer con estas lecturas se define en otra tarea. */
+function interpretacionDesactualizada(consulta) {
+  const escudo = escudoDeConsulta(consulta);
+
+  const problemasEscudo = verificarEscudo(escudo);
+  if (problemasEscudo.length) {
+    return { desactualizada: true, motivo: 'escudo', detalle: problemasEscudo };
+  }
+
+  const posiciones = posicionesDeEscudo(escudo, escudo.casas || []);
+  const presentes = new Set(posiciones.map(function (p) { return figuraPorPuntos(p[1]).nombre; }));
+  const texto = consulta.interpretacion || '';
+
+  const mencionadasAusentes = FIGURAS
+    .filter(function (f) { return !presentes.has(f.nombre); })
+    .filter(function (f) { return new RegExp('\\b' + f.nombre + '\\b').test(texto); })
+    .map(function (f) { return f.nombre; });
+
+  if (mencionadasAusentes.length) {
+    return { desactualizada: true, motivo: 'figuras', detalle: mencionadasAusentes };
+  }
+
+  return { desactualizada: false };
 }
 
 const INSTRUCCIONES_HILO =
@@ -1537,6 +1722,79 @@ function figurasAlucinadas(texto, escudo, escudosPrevios) {
     .map(function (f) { return f.nombre; });
 }
 
+/* Heurística: para cada mención de una posición ("Casa 7", "Juez", "Testigo
+   Derecho"…) en la sección "## La lectura", mira las ~180 letras siguientes
+   y comprueba que la primera figura que se nombra ahí sea la que le
+   corresponde a esa posición según el escudo de HOY. Se restringe a esa
+   sección — y solo al escudo de hoy — a propósito: la sección "Respuesta
+   directa" no nombra figuras por regla, y mezclar el hilo daría falsos
+   positivos con las menciones a tiradas anteriores. Es aviso, no bloqueo. */
+function revisarAsignaciones(texto, posiciones) {
+  const avisos = [];
+  const mapa = {};
+  posiciones.forEach(function (p) { mapa[p[0]] = figuraPorPuntos(p[1]).nombre; });
+
+  const marca = '## La lectura';
+  const inicio = texto.indexOf(marca);
+  const textoLectura = inicio === -1 ? texto : texto.slice(inicio);
+
+  Object.keys(mapa).forEach(function (etiqueta) {
+    const re = new RegExp(etiqueta + '([\\s\\S]{0,180})', 'g');
+    let m;
+    while ((m = re.exec(textoLectura)) !== null) {
+      const ventana = m[1];
+      let primera = null;
+      let posMin = Infinity;
+      FIGURAS.forEach(function (f) {
+        const idx = ventana.indexOf(f.nombre);
+        if (idx !== -1 && idx < posMin) { posMin = idx; primera = f.nombre; }
+      });
+      if (primera && primera !== mapa[etiqueta]) {
+        avisos.push(etiqueta + ' es ' + mapa[etiqueta] + ', pero el texto lo asocia a ' + primera + '.');
+      }
+    }
+  });
+
+  return Array.from(new Set(avisos));
+}
+
+/* Avisos que NO bloquean ni disparan reintento (a diferencia de
+   figurasAlucinadas, que sí lo hace): asignaciones cruzadas por posición, y
+   figuras del hilo mencionadas sin aclarar que son de una tirada anterior
+   (la regla H2 pide nombrarlas SOLO si se aclara). */
+function avisosDeInterpretacion(texto, escudo, escudosPrevios, posiciones) {
+  const avisos = [];
+
+  const presentesHoy = new Set();
+  posiciones.forEach(function (p) { presentesHoy.add(figuraPorPuntos(p[1]).nombre); });
+
+  const presentesEnHilo = new Set();
+  (escudosPrevios || []).forEach(function (e) {
+    e.madres.concat(e.hijas, e.sobrinas,
+      [e.testigoDerecho, e.testigoIzquierdo, e.juez, e.reconciliador])
+      .forEach(function (p) {
+        const nombre = figuraPorPuntos(p).nombre;
+        if (!presentesHoy.has(nombre)) presentesEnHilo.add(nombre);
+      });
+  });
+
+  const marcaDeHilo = /aquella tirada|tirada anterior|consulta anterior|en esa consulta|en aquel momento/i;
+  presentesEnHilo.forEach(function (nombre) {
+    const re = new RegExp('\\b' + nombre + '\\b', 'g');
+    let m;
+    let avisado = false;
+    while (!avisado && (m = re.exec(texto)) !== null) {
+      const ventana = texto.slice(Math.max(0, m.index - 80), m.index + 80);
+      if (!marcaDeHilo.test(ventana)) {
+        avisos.push(nombre + ' se menciona sin aclarar que es de una tirada anterior.');
+        avisado = true;
+      }
+    }
+  });
+
+  return avisos.concat(revisarAsignaciones(texto, posiciones));
+}
+
 const MAX_INTENTOS_INTERPRETACION = 3; // 1 intento + 2 reintentos
 
 /* Animación de espera: en vez de un texto fijo, se dibuja una figura geomántica
@@ -1681,6 +1939,11 @@ async function solicitarInterpretacion() {
           alucinadas.join(', ') + '. No las nombres. Usa solo las figuras listadas en los datos de arriba.';
         throw new Error('La interpretación menciona figuras que no están en el escudo: ' + alucinadas.join(', '));
       }
+      // Avisos: no bloquean ni reintentan, solo quedan en consola para diagnóstico.
+      const avisos = avisosDeInterpretacion(texto, estado.escudo, escudosPrevios,
+        posicionesDeEscudo(estado.escudo, estado.escudo.casas));
+      if (avisos.length) console.warn('Avisos de la interpretación (no bloquean):', avisos);
+
       estado.interpretacion = texto;
       mostrarCargando(false);
       estadoEl.hidden = true;
@@ -2473,9 +2736,24 @@ function crearTarjetaSeguimiento(consulta, contenedorHilo) {
    nueva, empezando por la raíz. */
 function pasosDelHilo(consulta) {
   const raizId = consulta.origen_id || consulta.id;
-  return consultasCargadas
+  const pasos = consultasCargadas
     .filter(function (c) { return c.id === raizId || c.origen_id === raizId; })
     .sort(function (a, b) { return new Date(a.creada_en) - new Date(b.creada_en); });
+
+  // Estos escudos vienen de Supabase, no de un calcularEscudo() recién
+  // corrido: a diferencia de la consulta en vivo, sí pueden estar
+  // desalineados (fila corrupta, migración vieja). No bloquea el hilo —
+  // solo lo deja anotado, igual que el resto de los fallos de datos de la app.
+  pasos.forEach(function (paso) {
+    const problemas = verificarEscudo(escudoDeConsulta(paso));
+    if (problemas.length) {
+      console.warn('El escudo de la consulta ' + paso.id + ' no cuadra matemáticamente:', problemas);
+      reportarError(new Error('Escudo inconsistente en un paso del hilo'), 'hilo.verificarEscudo',
+        { id: paso.id, problemas: problemas });
+    }
+  });
+
+  return pasos;
 }
 
 /* Seguir un asunto abre el flujo normal de consulta con el hilo cargado: se
@@ -3261,5 +3539,13 @@ if (typeof module !== 'undefined' && module.exports) {
     limpiarEventoSentry: limpiarEventoSentry,
     extraerJson: extraerJson,
     normalizarRevision: normalizarRevision,
+    describirFigura: describirFigura,
+    posicionesDeEscudo: posicionesDeEscudo,
+    detectarRepeticiones: detectarRepeticiones,
+    verificarEscudo: verificarEscudo,
+    revisarAsignaciones: revisarAsignaciones,
+    avisosDeInterpretacion: avisosDeInterpretacion,
+    escudoDeConsulta: escudoDeConsulta,
+    interpretacionDesactualizada: interpretacionDesactualizada,
   };
 }
