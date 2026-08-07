@@ -62,6 +62,12 @@ test.describe('Matemática del escudo', () => {
 test.describe('Validación anti-alucinación', () => {
   const escudo = app.calcularEscudo([[2, 1, 2, 1], [1, 2, 2, 2], [2, 1, 2, 2], [1, 2, 1, 1]]);
 
+  const nombresDe = function (e) {
+    return e.madres.concat(e.hijas, e.sobrinas,
+      [e.testigoDerecho, e.testigoIzquierdo, e.juez, e.reconciliador])
+      .map(function (p) { return app.figuraPorPuntos(p).nombre; });
+  };
+
   test('acepta un texto que solo nombra figuras presentes', () => {
     expect(app.figurasAlucinadas('El Juez Puer y la casa con Amissio.', escudo)).toEqual([]);
   });
@@ -74,6 +80,36 @@ test.describe('Validación anti-alucinación', () => {
   test('no confunde palabras corrientes con nombres de figuras', () => {
     // "vía" con tilde y en minúscula no es la figura Via.
     expect(app.figurasAlucinadas('Conviene buscar otra vía previa.', escudo)).toEqual([]);
+  });
+
+  /* Al seguir un asunto se le PIDE al modelo (regla H2) que nombre el Juez de
+     una tirada anterior para compararlo con el de hoy. Sin esta relajación el
+     validador lo tomaría por alucinación y la consulta terminaría sin lectura. */
+  test('acepta las figuras de una tirada anterior del hilo', () => {
+    const anterior = app.calcularEscudo([[1, 1, 1, 1], [2, 2, 2, 2], [1, 1, 2, 2], [2, 2, 1, 1]]);
+
+    // Una figura de la tirada anterior que NO esté también en la de hoy: los dos
+    // escudos comparten varias, y sobre esas el test no probaría nada.
+    const deHoy = new Set(nombresDe(escudo));
+    const soloAntes = nombresDe(anterior).find(function (n) { return !deHoy.has(n); });
+    expect(soloAntes).toBeTruthy();
+
+    // Sin el hilo, nombrarla es alucinación.
+    expect(app.figurasAlucinadas('Aquella tirada trajo ' + soloAntes + '.', escudo))
+      .toContain(soloAntes);
+
+    // Con el hilo, es exactamente lo que se le pidió.
+    expect(app.figurasAlucinadas('Aquella tirada trajo ' + soloAntes + '.', escudo, [anterior]))
+      .toEqual([]);
+  });
+
+  test('sigue rechazando una figura ajena a la tirada de hoy y a todo el hilo', () => {
+    const anterior = app.calcularEscudo([[1, 1, 1, 1], [2, 2, 2, 2], [1, 1, 2, 2], [2, 2, 1, 1]]);
+    const presentes = new Set(nombresDe(escudo).concat(nombresDe(anterior)));
+    const ajena = app.FIGURAS.find(function (f) { return !presentes.has(f.nombre); });
+
+    expect(app.figurasAlucinadas('Aparece ' + ajena.nombre + '.', escudo, [anterior]))
+      .toEqual([ajena.nombre]);
   });
 });
 

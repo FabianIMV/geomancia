@@ -42,13 +42,12 @@ Funciona y está desplegado en GitHub Pages desde `main`:
   correctivos, y **sin lectura de respaldo** (si el modelo falla, se dice)
 - Bitácora privada en Supabase con RLS, guardado opcional, verificación
   posterior, borrado y export en Markdown/JSON
-- Seguimientos: desde la bitácora se le puede preguntar otra cosa a una tirada
-  ya levantada, sin tirar de nuevo. Cada seguimiento es una fila más de
-  `consultas` con `origen_id` apuntando a la madre y el escudo copiado, así
-  hereda tarjeta, verificación, borrado y export sin código aparte. El prompt
-  (`construirPromptSeguimiento`) le devuelve al modelo la pregunta original, el
-  veredicto que ya dio, qué ocurrió realmente y las repreguntas previas, con un
-  presupuesto de caracteres para no pasarse del límite de la Edge Function
+- Hilos: un asunto se sigue en el tiempo. "Seguir este asunto" abre el flujo
+  normal de consulta con `estado.hilo` cargado; se traza una tirada NUEVA y
+  `construirPrompt` le suma el bloque `--- ANTES EN ESTE MISMO ASUNTO ---` con
+  las consultas previas (pregunta, Juez, veredicto y qué ocurrió). Cada paso es
+  una fila más de `consultas` con `origen_id` a la raíz, así hereda tarjeta,
+  verificación, borrado y export sin código aparte
 - Bitácora con filtro por tema, orden (fecha o resultado) y hilos anidados
 - PWA instalable con service worker (red primero para HTML)
 - **CI con 33 tests que bloquea el despliegue** (`.github/workflows/ci.yml`)
@@ -144,6 +143,22 @@ guardan (`acierto`, `resultado_real`); falta leerlos y mostrarlos.
   visita.** Todo lo que dependa de cuántos seguimientos hay (el aviso de
   borrado, el contador del resumen) se calcula al momento de usarlo, no al
   crear la tarjeta. Ya se rompió una vez por hacerlo al revés.
+- **El validador anti-alucinación acepta las figuras del hilo, a propósito.**
+  `figurasAlucinadas(texto, escudo, escudosPrevios)`: al seguir un asunto se le
+  PIDE al modelo (regla H2) que nombre el Juez de una tirada anterior para
+  compararlo con el de hoy. Sin ese tercer parámetro el validador lo tomaría
+  por alucinación, gastaría los tres intentos y la consulta terminaría sin
+  lectura. Lo estricto sigue: una figura ajena a la tirada de hoy Y a todo el
+  hilo se rechaza igual. Hay tests que fijan las dos mitades.
+- **Una lectura recién generada nunca se muestra plegada.** La primera versión
+  de los seguimientos pintaba la respuesta dentro de un `<details>` cerrado: el
+  veredicto estaba ahí pero nada indicaba que había que tocar la tarjeta, y se
+  leyó como que la app no funcionaba. Por eso el hilo va por el flujo normal.
+- **`inicializar()` no puede volver a romperse en cadena.** Encadenaba
+  `getElementById(x).addEventListener(...)`; con un `index.html` viejo servido
+  junto a un `app.js` nuevo, un solo null tiraba TypeError y dejaba sin
+  registrar todos los listeners siguientes. Ahora usa `alTocar`, que avisa por
+  consola y sigue.
 
 ## Lo que no hay que tocar
 
