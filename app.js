@@ -116,6 +116,25 @@ function reportarError(err, dondeOcurrio, contexto) {
   }
 }
 
+/* Igual que reportarError, pero para algo que NO es un fallo: un aviso de
+   avisosDeInterpretacion (asignación cruzada, figura del hilo sin aclarar).
+   No bloquea nada — esto es solo para medir con qué frecuencia dispara antes
+   de decidir si hace falta UI para mostrarlo o si es puro ruido. Pasa por el
+   mismo beforeSend que reportarError, así que el saneado de datos sensibles
+   se aplica igual. */
+function reportarAviso(mensaje, contexto) {
+  if (typeof window === 'undefined' || !window.Sentry || !window.Sentry.captureMessage) return;
+  try {
+    window.Sentry.captureMessage(mensaje, {
+      level: 'info',
+      tags: { donde: 'interpretacion.aviso' },
+      extra: contexto || {},
+    });
+  } catch (fallo) {
+    console.warn('No se pudo reportar el aviso a Sentry:', fallo);
+  }
+}
+
 function iniciarSentry() {
   const cfg = (typeof window !== 'undefined' && window.GEOMANCIA_CONFIG) || {};
   const dsn = cfg.SENTRY_DSN || '';
@@ -1169,12 +1188,23 @@ const INSTRUCCIONES_SISTEMA =
   '14. Si al leer los datos encuentras una contradicción interna, dilo abiertamente en lugar de resolverla inventando. Nunca rellenes un vacío con una figura plausible.\n' +
   '15. Responde EXCLUSIVAMENTE en español.';
 
+// Las únicas 4 figuras con `elemento` verificado (ver el comentario en
+// FIGURAS): las únicas para las que el prompt puede usar ese campo.
+const ELEMENTO_VERIFICADO = new Set(['Laetitia', 'Rubeus', 'Albus', 'Tristitia']);
+
 /* El binario va pegado al nombre, entre corchetes: el modelo ve el dato duro
-   junto al nombre y no puede sustituir uno sin contradecir al otro. */
+   junto al nombre y no puede sustituir uno sin contradecir al otro.
+
+   `elemento` y `planeta` NO van al prompt salvo la excepción de abajo:
+   salieron de la misma generación sin revisar que produjo la tabla de
+   binarios mala (ver el comentario en FIGURAS), y el modelo no debe razonar
+   sobre un dato que sabemos dudoso. Única excepción: `elemento` para las 4
+   figuras verificadas. `planeta` no se manda para ninguna — no está
+   verificado para ninguna de las 16. */
 function describirFigura(puntos) {
   const f = figuraPorPuntos(puntos);
-  return '[' + puntos.join('·') + '] ' + f.nombre +
-    ' (' + f.traduccion + ', ' + f.naturaleza + ', elemento ' + f.elemento + ', planeta ' + f.planeta + ')';
+  const elemento = ELEMENTO_VERIFICADO.has(f.nombre) ? ', elemento ' + f.elemento : '';
+  return '[' + puntos.join('·') + '] ' + f.nombre + ' (' + f.traduccion + ', ' + f.naturaleza + elemento + ')';
 }
 
 /* Los bloques de datos que van a cualquier prompt: las 16 posiciones del
@@ -1939,10 +1969,22 @@ async function solicitarInterpretacion() {
           alucinadas.join(', ') + '. No las nombres. Usa solo las figuras listadas en los datos de arriba.';
         throw new Error('La interpretación menciona figuras que no están en el escudo: ' + alucinadas.join(', '));
       }
-      // Avisos: no bloquean ni reintentan, solo quedan en consola para diagnóstico.
+      // Avisos: no bloquean ni reintentan. Van a Sentry como evento informativo
+      // (no una excepción) para medir con qué frecuencia dispara
+      // revisarAsignaciones antes de decidir si hace falta UI para esto.
       const avisos = avisosDeInterpretacion(texto, estado.escudo, escudosPrevios,
         posicionesDeEscudo(estado.escudo, estado.escudo.casas));
-      if (avisos.length) console.warn('Avisos de la interpretación (no bloquean):', avisos);
+      if (avisos.length) {
+        console.warn('Avisos de la interpretación (no bloquean):', avisos);
+        reportarAviso('Avisos en la interpretación (' + avisos.length + ')', {
+          // Todavía sin guardar en este punto del flujo: el id llega null salvo
+          // que sea un reintento sobre una consulta ya guardada.
+          id_consulta: estado.idConsultaGuardada,
+          hubo_hilo: !!estado.hilo,
+          cantidad: avisos.length,
+          avisos: avisos,
+        });
+      }
 
       estado.interpretacion = texto;
       mostrarCargando(false);
