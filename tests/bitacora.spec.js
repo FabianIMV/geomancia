@@ -187,10 +187,10 @@ test.describe('Bitácora', () => {
   });
 });
 
-test.describe('Seguimientos', () => {
+test.describe('Hilos', () => {
   // Sin nombres de figuras: el escudo es aleatorio y el validador
   // anti-alucinación rechazaría cualquiera que no esté en la tirada.
-  const RESPUESTA_SEGUIMIENTO = [
+  const LECTURA_DE_HILO = [
     '## Respuesta directa',
     '**Sí, pero…** el asunto sigue inclinándose igual que la vez pasada.',
     '',
@@ -206,38 +206,44 @@ test.describe('Seguimientos', () => {
     await page.click('#btn-nueva-consulta');
   }
 
-  async function preguntarSeguimiento(page, pregunta) {
-    await page.fill('.seguimiento textarea', pregunta);
-    await page.click('.btn-preguntar-seguimiento');
+  // Sigue el asunto de la primera entrada de la bitácora y guarda el resultado.
+  async function seguirAsunto(page, pregunta) {
+    await page.click('#btn-bitacora');
+    await page.click('.entrada-bitacora > summary');
+    await page.click('.entrada-bitacora > .entrada-cuerpo > .btn-seguir-asunto');
+    await expect(page.locator('#pantalla-pregunta.activa')).toBeVisible();
+    await page.fill('#input-pregunta', pregunta);
+    await page.click('#btn-a-generacion');
+    await page.waitForSelector('#pantalla-resultado.activa', { timeout: 20000 });
+    // La pantalla se activa ANTES de pedir la interpretación: hay que esperar a
+    // que la lectura esté, o se lee el prompt antes de que se haya mandado.
+    await page.waitForSelector('#bloque-guardado:not([hidden])', { timeout: 20000 });
   }
 
-  test('repregunta sobre la misma tirada y la cuelga del hilo', async ({ page }) => {
+  test('seguir un asunto traza una tirada nueva y la cuelga del hilo', async ({ page }) => {
     await prepararApp(page);
     await iniciarSesion(page);
     await guardarUna(page, '¿Conseguiré el trabajo?');
 
-    await page.click('#btn-bitacora');
-    await page.click('.entrada-bitacora > summary');
+    await stubGemini(page, { texto: LECTURA_DE_HILO });
+    await seguirAsunto(page, '¿Y un mes después, cómo sigue?');
 
-    await stubGemini(page, { texto: RESPUESTA_SEGUIMIENTO });
-    await preguntarSeguimiento(page, '¿Y un mes después, cómo sigue?');
+    // La lectura se ve sin abrir nada: es la regresión que motivó el rediseño.
+    await expect(page.locator('#interpretacion-texto')).toContainText('Respuesta directa');
+    await expect(page.locator('#cartel-hilo-resultado')).toContainText('¿Conseguiré el trabajo?');
 
-    await expect(page.locator('.entrada-hilo')).toHaveCount(1);
-    await expect(page.locator('.entrada-hilo .entrada-pregunta'))
-      .toHaveText('¿Y un mes después, cómo sigue?');
-    await expect(page.locator('.entrada-bitacora > summary .entrada-meta'))
-      .toContainText('1 seguimiento');
+    await page.click('#btn-guardar-bitacora');
+    await expect(page.locator('#btn-guardar-bitacora')).toHaveText('Quitar de mi bitácora');
 
     const filas = await page.evaluate(() => window.__filas);
     expect(filas).toHaveLength(2);
     expect(filas[1].origen_id).toBe(filas[0].id);
-    // No se tiró de nuevo: el escudo es el mismo.
-    expect(filas[1].juez).toEqual(filas[0].juez);
-    expect(filas[1].madres).toEqual(filas[0].madres);
     expect(filas[1].tema_id).toBe(filas[0].tema_id);
+    // Es una tirada NUEVA: el escudo no se copió del anterior.
+    expect(filas[1].madres).not.toEqual(filas[0].madres);
   });
 
-  test('el prompt del seguimiento lleva la memoria de la tirada', async ({ page }) => {
+  test('el prompt del paso siguiente lleva la memoria del asunto', async ({ page }) => {
     await prepararApp(page);
     await iniciarSesion(page);
     await guardarUna(page, '¿Conseguiré el trabajo?');
@@ -248,54 +254,103 @@ test.describe('Seguimientos', () => {
     await page.click('.btn-acierto:has-text("Parcial")');
     await page.click('.verificacion .btn-secundario');
     await expect(page.locator('.marca-acierto').first()).toHaveText('Parcial');
+    await page.click('#btn-volver-bitacora');
 
     const prompts = [];
     await stubGemini(page, {
-      texto: RESPUESTA_SEGUIMIENTO,
+      texto: LECTURA_DE_HILO,
       alPedir: (prompt) => { prompts.push(prompt); },
     });
-    await preguntarSeguimiento(page, '¿Conviene insistir con ellos?');
-    await expect(page.locator('.entrada-hilo')).toHaveCount(1);
+    await seguirAsunto(page, '¿Conviene insistir con ellos?');
 
-    expect(prompts).toHaveLength(1);
-    const prompt = prompts[0];
-    expect(prompt).toContain('ESTA CONSULTA ES UN SEGUIMIENTO');
-    expect(prompt).toContain('Pregunta original: ¿Conseguiré el trabajo?');
-    expect(prompt).toContain('--- VEREDICTO QUE YA SE DIO SOBRE ESTA TIRADA ---');
+    const prompt = prompts[prompts.length - 1];
+    expect(prompt).toContain('ESTA CONSULTA CONTINÚA UN ASUNTO YA CONSULTADO');
+    expect(prompt).toContain('--- ANTES EN ESTE MISMO ASUNTO ---');
+    expect(prompt).toContain('¿Conseguiré el trabajo?');
+    expect(prompt).toContain('Juez de aquella tirada:');
     expect(prompt).toContain('Me llamaron para una segunda entrevista.');
-    expect(prompt).toContain('--- PREGUNTA NUEVA');
     expect(prompt).toContain('¿Conviene insistir con ellos?');
-    expect(prompt).toContain('--- ESCUDO COMPLETO (el mismo de aquella tirada) ---');
+    // El escudo de hoy sigue estando, y es el que juzga.
+    expect(prompt).toContain('--- ESCUDO COMPLETO ---');
     // El proxy rechaza por encima de 20000; el constructor recorta antes.
     expect(prompt.length).toBeLessThanOrEqual(18000);
   });
 
-  test('si el oráculo falla no se guarda nada', async ({ page }) => {
+  test('salir del hilo deja la consulta suelta', async ({ page }) => {
     await prepararApp(page);
     await iniciarSesion(page);
-    await guardarUna(page, '¿Se sostiene el asunto?');
+    await guardarUna(page, '¿Sigo en el hilo?');
 
     await page.click('#btn-bitacora');
     await page.click('.entrada-bitacora > summary');
+    await page.click('.entrada-bitacora > .entrada-cuerpo > .btn-seguir-asunto');
+    await expect(page.locator('#cartel-hilo-pregunta')).toContainText('¿Sigo en el hilo?');
 
-    await stubGemini(page, { fallar: true });
-    await preguntarSeguimiento(page, '¿Y ahora?');
+    await page.click('#cartel-hilo-pregunta .btn-enlace');
+    await expect(page.locator('#cartel-hilo-pregunta')).toBeHidden();
 
-    await expect(page.locator('.seguimiento .aviso-guardado'))
-      .toContainText('No se pudo consultar', { timeout: 30000 });
-    await expect(page.locator('.entrada-hilo')).toHaveCount(0);
-    expect(await page.evaluate(() => window.__filas.length)).toBe(1);
+    await page.fill('#input-pregunta', '¿Esta es suelta?');
+    await page.click('#btn-a-generacion');
+    await page.waitForSelector('#pantalla-resultado.activa', { timeout: 20000 });
+    await expect(page.locator('#cartel-hilo-resultado')).toBeHidden();
+    await page.click('#btn-guardar-bitacora');
+    await expect(page.locator('#btn-guardar-bitacora')).toHaveText('Quitar de mi bitácora');
+
+    const filas = await page.evaluate(() => window.__filas);
+    expect(filas[1].origen_id).toBeFalsy();
   });
 
-  test('borrar la tirada madre se lleva el hilo entero', async ({ page }) => {
+  test('encadena tres consultas sobre el mismo asunto', async ({ page }) => {
+    await prepararApp(page);
+    await iniciarSesion(page);
+    await guardarUna(page, '¿Cómo viene el asunto?');
+
+    const prompts = [];
+    await stubGemini(page, {
+      texto: LECTURA_DE_HILO,
+      alPedir: (prompt) => { prompts.push(prompt); },
+    });
+
+    await seguirAsunto(page, '¿Segundo paso?');
+    await page.click('#btn-guardar-bitacora');
+    await expect(page.locator('#btn-guardar-bitacora')).toHaveText('Quitar de mi bitácora');
+    await page.click('#btn-nueva-consulta');
+
+    await seguirAsunto(page, '¿Tercer paso?');
+    await page.click('#btn-guardar-bitacora');
+    await expect(page.locator('#btn-guardar-bitacora')).toHaveText('Quitar de mi bitácora');
+
+    const ultimo = prompts[prompts.length - 1];
+    expect(ultimo).toContain('¿Cómo viene el asunto?');
+    expect(ultimo).toContain('¿Segundo paso?');
+    expect(ultimo).toContain('[2]');
+
+    const filas = await page.evaluate(() => window.__filas);
+    expect(filas).toHaveLength(3);
+    // El hilo es plano: los tres cuelgan de la raíz.
+    expect(filas[1].origen_id).toBe(filas[0].id);
+    expect(filas[2].origen_id).toBe(filas[0].id);
+
+    await page.click('#btn-nueva-consulta');
+    await page.click('#btn-bitacora');
+    await expect(page.locator('.entrada-bitacora')).toHaveCount(1);
+    await expect(page.locator('.entrada-bitacora > summary .entrada-meta'))
+      .toContainText('hilo de 3 consultas');
+  });
+
+  test('borrar la consulta raíz se lleva el hilo entero', async ({ page }) => {
     await prepararApp(page);
     await iniciarSesion(page);
     await guardarUna(page, '¿Se puede borrar el hilo?');
 
+    await stubGemini(page, { texto: LECTURA_DE_HILO });
+    await seguirAsunto(page, '¿Y con esto qué pasa?');
+    await page.click('#btn-guardar-bitacora');
+    await expect(page.locator('#btn-guardar-bitacora')).toHaveText('Quitar de mi bitácora');
+
+    await page.click('#btn-nueva-consulta');
     await page.click('#btn-bitacora');
     await page.click('.entrada-bitacora > summary');
-    await stubGemini(page, { texto: RESPUESTA_SEGUIMIENTO });
-    await preguntarSeguimiento(page, '¿Y con esto qué pasa?');
     await expect(page.locator('.entrada-hilo')).toHaveCount(1);
 
     const borradoRaiz = '.entrada-bitacora > .entrada-cuerpo > .zona-borrado';
@@ -316,7 +371,6 @@ test.describe('Seguimientos', () => {
 
     await page.click('#btn-bitacora');
     await expect(page.locator('.entrada-bitacora')).toHaveCount(2);
-    // Por defecto, lo más reciente arriba.
     await expect(page.locator('.entrada-bitacora .entrada-pregunta').first())
       .toHaveText('¿Cómo va el viaje?');
 
@@ -326,31 +380,30 @@ test.describe('Seguimientos', () => {
 
     await page.selectOption('#filtro-tema', 'viaje');
     await expect(page.locator('.entrada-bitacora')).toHaveCount(1);
-    await expect(page.locator('.entrada-bitacora .entrada-pregunta'))
-      .toHaveText('¿Cómo va el viaje?');
 
     await page.selectOption('#filtro-tema', 'salud');
     await expect(page.locator('.entrada-bitacora')).toHaveCount(0);
     await expect(page.locator('#estado-bitacora')).toContainText('Ninguna consulta de ese tema');
   });
 
-  test('el respaldo en Markdown incluye el hilo sin repetir el escudo', async ({ page }) => {
+  test('el respaldo en Markdown escribe cada paso como tirada propia', async ({ page }) => {
     await prepararApp(page);
     await iniciarSesion(page);
     await guardarUna(page, '¿Sirve el respaldo del hilo?');
 
+    await stubGemini(page, { texto: LECTURA_DE_HILO });
+    await seguirAsunto(page, '¿Y el mes que viene?');
+    await page.click('#btn-guardar-bitacora');
+    await expect(page.locator('#btn-guardar-bitacora')).toHaveText('Quitar de mi bitácora');
+
+    await page.click('#btn-nueva-consulta');
     await page.click('#btn-bitacora');
-    await page.click('.entrada-bitacora > summary');
-    await stubGemini(page, { texto: RESPUESTA_SEGUIMIENTO });
-    await preguntarSeguimiento(page, '¿Y el mes que viene?');
-    await expect(page.locator('.entrada-hilo')).toHaveCount(1);
 
     const md = await page.evaluate(() => bitacoraAMarkdown(consultasCargadas));
     expect(md).toContain('1 tiradas · 1 seguimientos');
-    expect(md).toContain('### Seguimiento 1.1 — ¿Y el mes que viene?');
-    expect(md).toContain('**Mismo escudo que la tirada 1.**');
-    // El escudo completo se escribe una sola vez, el de la tirada madre.
-    expect(md.match(/### Carta de 12 casas/g)).toHaveLength(1);
+    expect(md).toContain('## 1.1 — Seguimiento de «¿Sirve el respaldo del hilo?»: ¿Y el mes que viene?');
+    // Cada paso lleva su propia tirada, así que la carta se escribe dos veces.
+    expect(md.match(/### Carta de 12 casas/g)).toHaveLength(2);
   });
 });
 
