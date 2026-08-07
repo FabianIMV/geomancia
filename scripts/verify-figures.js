@@ -45,6 +45,37 @@ let cubreTodas = true;
 todasLasCombinaciones.forEach(function (c) { if (!patrones.has(c)) cubreTodas = false; });
 afirmar(cubreTodas, 'Las 16 figuras cubren las 16 combinaciones binarias posibles');
 
+// --- 2bis. Simetría vertical: SOLO Populus, Via, Coniunctio y Carcer son palíndromos ---
+// (la tabla original fallaba esto: daba Fortuna Major y Fortuna Minor en su lugar)
+function esPalindromo(puntos) { return puntos[0] === puntos[3] && puntos[1] === puntos[2]; }
+const simetricas = FIGURAS.filter(function (f) { return esPalindromo(f.puntos); })
+  .map(function (f) { return f.nombre; }).sort();
+afirmar(
+  JSON.stringify(simetricas) === JSON.stringify(['Carcer', 'Coniunctio', 'Populus', 'Via']),
+  'Las únicas figuras verticalmente simétricas son Populus, Via, Coniunctio y Carcer (encontradas: ' + simetricas.join(', ') + ')'
+);
+
+// --- 2ter. Una sola línea activa, en el elemento que le corresponde ---
+// La posición de esa única línea activa fija el elemento sin ambigüedad para
+// estas cuatro; ver el comentario de FIGURAS. No se verifican las otras doce.
+const ELEMENTOS = ['Fuego', 'Aire', 'Agua', 'Tierra'];
+const UNA_LINEA_ACTIVA = { Laetitia: 0, Rubeus: 1, Albus: 2, Tristitia: 3 };
+Object.keys(UNA_LINEA_ACTIVA).forEach(function (nombre) {
+  const figura = FIGURAS.find(function (f) { return f.nombre === nombre; });
+  const activas = figura.puntos.map(function (v, i) { return v === 1 ? i : -1; }).filter(function (i) { return i !== -1; });
+  const posEsperada = UNA_LINEA_ACTIVA[nombre];
+  const posicionOk = activas.length === 1 && activas[0] === posEsperada;
+  afirmar(
+    posicionOk,
+    nombre + ' tiene su única línea activa en ' + ELEMENTOS[posEsperada] +
+      ' (encontradas en: ' + activas.map(function (i) { return ELEMENTOS[i]; }).join(', ') + ')'
+  );
+  afirmar(
+    figura.elemento === ELEMENTOS[posEsperada],
+    nombre + '.elemento es \'' + ELEMENTOS[posEsperada] + '\' (guardado: \'' + figura.elemento + '\')'
+  );
+});
+
 // --- 3. Debe haber exactamente 12 casas, 1..12 ---
 afirmar(CASAS.length === 12, 'Hay 12 casas');
 CASAS.forEach(function (c, i) {
@@ -52,29 +83,32 @@ CASAS.forEach(function (c, i) {
 });
 
 // --- 4. Caso de prueba fijo: verifica transposición, sumas XOR, testigos y juez ---
-const M1 = [2, 1, 2, 1]; // Puer
-const M2 = [1, 2, 2, 2]; // Amissio
-const M3 = [2, 1, 2, 2]; // Albus
-const M4 = [1, 2, 1, 1]; // Rubeus
+// Los comentarios muestran el nombre que le corresponde a cada binario según
+// la tabla FIGURAS vigente; los binarios en sí (lo que realmente se verifica
+// más abajo) no cambian con una corrección de nombres.
+const M1 = [2, 1, 2, 1]; // Acquisitio
+const M2 = [1, 2, 2, 2]; // Laetitia
+const M3 = [2, 1, 2, 2]; // Rubeus
+const M4 = [1, 2, 1, 1]; // Puella
 
 const escudo = calcularEscudo([M1, M2, M3, M4]);
 
 const esperado = {
   hijas: [
-    [2, 1, 2, 1], // Puer
-    [1, 2, 1, 2], // Puella
-    [2, 2, 2, 1], // Cauda Draconis
-    [1, 2, 2, 1], // Fortuna Major
+    [2, 1, 2, 1], // Acquisitio
+    [1, 2, 1, 2], // Amissio
+    [2, 2, 2, 1], // Tristitia
+    [1, 2, 2, 1], // Carcer
   ],
   sobrinas: [
-    [1, 1, 2, 1], // Coniunctio
+    [1, 1, 2, 1], // Puer
     [1, 1, 1, 1], // Via
     [1, 1, 1, 1], // Via
-    [1, 2, 2, 2], // Amissio
+    [1, 2, 2, 2], // Laetitia
   ],
-  testigoDerecho: [2, 2, 1, 2],   // Carcer
-  testigoIzquierdo: [2, 1, 1, 1], // Acquisitio
-  juez: [2, 1, 2, 1],             // Puer
+  testigoDerecho: [2, 2, 1, 2],   // Albus
+  testigoIzquierdo: [2, 1, 1, 1], // Caput Draconis
+  juez: [2, 1, 2, 1],             // Acquisitio
   reconciliador: [2, 2, 2, 2],    // Populus
 };
 

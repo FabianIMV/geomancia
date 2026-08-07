@@ -73,8 +73,10 @@ test.describe('Validación anti-alucinación', () => {
   });
 
   test('detecta figuras que no están en la tirada', () => {
-    const fuera = app.figurasAlucinadas('Aparece Laetitia junto a Tristitia.', escudo);
-    expect(fuera.sort()).toEqual(['Laetitia', 'Tristitia']);
+    // Coniunctio y Fortuna Major están ausentes en este escudo fijo (confirmado
+    // contra la tabla FIGURAS vigente: ver el comentario en su declaración).
+    const fuera = app.figurasAlucinadas('Aparece Coniunctio junto a Fortuna Major.', escudo);
+    expect(fuera.sort()).toEqual(['Coniunctio', 'Fortuna Major']);
   });
 
   test('no confunde palabras corrientes con nombres de figuras', () => {
