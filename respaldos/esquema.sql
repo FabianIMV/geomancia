@@ -104,11 +104,16 @@ CREATE TABLE IF NOT EXISTS "public"."consultas" (
     "resultado_real" "text",
     "acierto" "text",
     "verificada_en" timestamp with time zone,
+    "origen_id" "uuid",
     CONSTRAINT "consultas_acierto_check" CHECK (("acierto" = ANY (ARRAY['acerto'::"text", 'parcial'::"text", 'fallo'::"text", 'sin_verificar'::"text"])))
 );
 
 
 ALTER TABLE "public"."consultas" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."consultas"."origen_id" IS 'Si no es null, esta fila es un seguimiento: una pregunta nueva sobre el escudo ya levantado en la consulta apuntada. El escudo se copia para que la fila se pueda leer y auditar sola. Borrar la tirada madre se lleva su hilo entero (on delete cascade).';
+
 
 
 CREATE TABLE IF NOT EXISTS "public"."uso_diario" (
@@ -131,7 +136,16 @@ ALTER TABLE ONLY "public"."uso_diario"
 
 
 
+CREATE INDEX "consultas_origen_id_idx" ON "public"."consultas" USING "btree" ("origen_id") WHERE ("origen_id" IS NOT NULL);
+
+
+
 CREATE INDEX "consultas_user_id_creada_en_idx" ON "public"."consultas" USING "btree" ("user_id", "creada_en" DESC);
+
+
+
+ALTER TABLE ONLY "public"."consultas"
+    ADD CONSTRAINT "consultas_origen_id_fkey" FOREIGN KEY ("origen_id") REFERENCES "public"."consultas"("id") ON DELETE CASCADE;
 
 
 
