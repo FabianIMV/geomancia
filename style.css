@@ -356,6 +356,36 @@ textarea:focus, select:focus, input:focus {
   background: var(--cobre-fuerte);
 }
 
+.controles-laberinto {
+  display: grid;
+  grid-template-columns: repeat(3, 48px);
+  grid-template-rows: repeat(3, 48px);
+  gap: 0.5rem;
+  justify-content: center;
+  margin: 0.6rem auto 0;
+}
+
+.control-laberinto {
+  background: var(--panel);
+  border: 1px solid var(--panel-borde);
+  border-radius: var(--radio);
+  color: var(--arena);
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s ease, border-color 0.15s ease;
+}
+.control-laberinto:active { transform: scale(0.92); }
+.control-laberinto:hover { border-color: var(--cobre-fuerte); }
+
+.ctrl-arriba { grid-column: 2; grid-row: 1; }
+.ctrl-izquierda { grid-column: 1; grid-row: 2; }
+.ctrl-derecha { grid-column: 3; grid-row: 2; }
+.ctrl-abajo { grid-column: 2; grid-row: 3; }
+
 /* Cálculo animado */
 .paso-calculo {
   font-size: 1.15rem;
