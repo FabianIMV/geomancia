@@ -317,76 +317,44 @@ textarea:focus, select:focus, input:focus {
   color: var(--cobre-fuerte);
 }
 
-/* El umbral: sello de elementos */
-.puntos-sello {
-  display: flex;
-  gap: 0.55rem;
-  justify-content: center;
-  margin: 0.3rem 0 1.4rem;
+/* Pantalla previa: laberinto */
+.laberinto {
+  display: grid;
+  gap: 0;
+  margin: 1.6rem auto;
+  border: 2px solid var(--arena-suave);
+  width: max-content;
 }
 
-.punto-sello {
+.celda-laberinto {
+  width: 48px;
+  height: 48px;
+  box-sizing: border-box;
+  border: 2px solid transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.celda-laberinto.pared-n { border-top-color: var(--arena-suave); }
+.celda-laberinto.pared-s { border-bottom-color: var(--arena-suave); }
+.celda-laberinto.pared-e { border-right-color: var(--arena-suave); }
+.celda-laberinto.pared-o { border-left-color: var(--arena-suave); }
+
+.celda-laberinto.meta-laberinto::after {
+  content: '';
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  border: 1px solid var(--panel-borde);
-  background: transparent;
-  transition: background 0.15s ease, border-color 0.15s ease;
-}
-.punto-sello.lleno { background: var(--cobre-fuerte); border-color: var(--cobre-fuerte); }
-
-.grid-sello {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.7rem;
-  margin-bottom: 0.4rem;
+  border: 2px solid var(--cobre-fuerte);
 }
 
-.elemento-sello {
-  background: var(--panel);
-  border: 1px solid var(--panel-borde);
-  border-radius: var(--radio);
-  padding: 1.1rem 0.6rem 0.9rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.6rem;
-  color: var(--arena);
-  font-family: inherit;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: transform 0.1s ease, border-color 0.15s ease;
+.token-laberinto {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--cobre-fuerte);
 }
-.elemento-sello:active { transform: scale(0.96); }
-.elemento-sello:hover { border-color: var(--cobre-fuerte); }
-
-.triangulo-sello {
-  position: relative;
-  width: 0;
-  height: 0;
-  border-left: 13px solid transparent;
-  border-right: 13px solid transparent;
-}
-.triangulo-sello.arriba { border-bottom: 20px solid var(--cobre-fuerte); }
-.triangulo-sello.abajo { border-top: 20px solid var(--cobre-fuerte); }
-.triangulo-sello.linea::after {
-  content: '';
-  position: absolute;
-  left: -13px;
-  width: 26px;
-  height: 2px;
-  background: var(--negro);
-}
-.triangulo-sello.arriba.linea::after { bottom: 6px; }
-.triangulo-sello.abajo.linea::after { top: 6px; }
-
-@keyframes sacudida-sello {
-  10%, 90% { transform: translateX(-1px); }
-  20%, 80% { transform: translateX(2px); }
-  30%, 50%, 70% { transform: translateX(-4px); }
-  40%, 60% { transform: translateX(4px); }
-}
-.pantalla.sacudir { animation: sacudida-sello 0.5s; }
 
 /* Cálculo animado */
 .paso-calculo {
