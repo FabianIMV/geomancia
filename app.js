@@ -3536,6 +3536,11 @@ function inicializarPortal() {
     else if (ev.key === 'ArrowLeft') moverLaberinto(0, -1);
     else if (ev.key === 'ArrowRight') moverLaberinto(0, 1);
   });
+
+  alTocar('lab-arriba', function () { moverLaberinto(-1, 0); });
+  alTocar('lab-abajo', function () { moverLaberinto(1, 0); });
+  alTocar('lab-izquierda', function () { moverLaberinto(0, -1); });
+  alTocar('lab-derecha', function () { moverLaberinto(0, 1); });
 }
 
 /* ==========================================================================
