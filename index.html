@@ -18,40 +18,11 @@
 
 <div id="app">
 
-  <!-- PANTALLA 0: EL UMBRAL -->
+  <!-- PANTALLA 0 -->
   <section id="pantalla-portal" class="pantalla activa">
     <div class="contenedor centrado">
       <p class="marca">Geomancia</p>
-      <h1 id="titulo-sello">El umbral</h1>
-      <p class="explicacion" id="guia-sello">Trazá tu sello para que el oráculo se abra.</p>
-
-      <div class="puntos-sello" id="puntos-sello"></div>
-
-      <div class="grid-sello">
-        <button type="button" class="elemento-sello" data-elemento="Fuego">
-          <span class="triangulo-sello arriba" aria-hidden="true"></span>
-          <span>Fuego</span>
-        </button>
-        <button type="button" class="elemento-sello" data-elemento="Aire">
-          <span class="triangulo-sello arriba linea" aria-hidden="true"></span>
-          <span>Aire</span>
-        </button>
-        <button type="button" class="elemento-sello" data-elemento="Agua">
-          <span class="triangulo-sello abajo" aria-hidden="true"></span>
-          <span>Agua</span>
-        </button>
-        <button type="button" class="elemento-sello" data-elemento="Tierra">
-          <span class="triangulo-sello abajo linea" aria-hidden="true"></span>
-          <span>Tierra</span>
-        </button>
-      </div>
-
-      <p class="error" id="error-sello" hidden></p>
-
-      <div class="fila-botones">
-        <button id="btn-borrar-sello" class="btn btn-secundario" hidden>Borrar último</button>
-        <button id="btn-trazar-sello" class="btn btn-primario" disabled>Trazar el sello</button>
-      </div>
+      <div class="laberinto" id="laberinto"></div>
     </div>
   </section>
 
