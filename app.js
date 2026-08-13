@@ -3403,6 +3403,167 @@ function actualizarCartelHilo() {
 }
 
 /* ==========================================================================
+   EL UMBRAL
+
+   Antes de entrar, se traza un sello propio: una secuencia de elementos
+   elegida libremente la primera vez. Solo se guarda su hash en este
+   navegador — nunca la secuencia en sí — y hace falta reproducirla en cada
+   visita para que el oráculo se abra.
+   ========================================================================== */
+
+const CLAVE_LOCALSTORAGE_SELLO = 'geomancia_sello';
+const LARGO_MINIMO_SELLO = 3;
+
+let secuenciaSello = [];
+let selloPendienteConfirmar = null;
+
+async function hashSecuencia(secuencia) {
+  const texto = secuencia.join('-');
+  if (!window.crypto || !crypto.subtle) return texto;
+  const datos = new TextEncoder().encode(texto);
+  const buffer = await crypto.subtle.digest('SHA-256', datos);
+  return Array.from(new Uint8Array(buffer)).map(function (b) {
+    return b.toString(16).padStart(2, '0');
+  }).join('');
+}
+
+function getSelloGuardado() {
+  try {
+    return localStorage.getItem(CLAVE_LOCALSTORAGE_SELLO) || '';
+  } catch (err) {
+    return '';
+  }
+}
+
+function setSelloGuardado(hash) {
+  try {
+    localStorage.setItem(CLAVE_LOCALSTORAGE_SELLO, hash);
+  } catch (err) {
+    console.error('No se pudo guardar el sello en localStorage:', err);
+  }
+}
+
+function renderPuntosSello() {
+  const cont = document.getElementById('puntos-sello');
+  if (!cont) return;
+  cont.innerHTML = '';
+  const total = Math.max(secuenciaSello.length, LARGO_MINIMO_SELLO);
+  for (let i = 0; i < total; i++) {
+    const punto = document.createElement('span');
+    punto.className = 'punto-sello' + (i < secuenciaSello.length ? ' lleno' : '');
+    cont.appendChild(punto);
+  }
+}
+
+function actualizarBotonesSello() {
+  const btnTrazar = document.getElementById('btn-trazar-sello');
+  const btnBorrar = document.getElementById('btn-borrar-sello');
+  if (btnTrazar) btnTrazar.disabled = secuenciaSello.length < LARGO_MINIMO_SELLO;
+  if (btnBorrar) btnBorrar.hidden = secuenciaSello.length === 0;
+}
+
+function reiniciarTrazoSello() {
+  secuenciaSello = [];
+  renderPuntosSello();
+  actualizarBotonesSello();
+}
+
+function sacudirPantallaPortal() {
+  const cont = document.getElementById('pantalla-portal');
+  if (!cont) return;
+  cont.classList.remove('sacudir');
+  void cont.offsetWidth;
+  cont.classList.add('sacudir');
+}
+
+function mostrarErrorSello(msg) {
+  const el = document.getElementById('error-sello');
+  if (!el) return;
+  if (!msg) {
+    el.hidden = true;
+    return;
+  }
+  el.textContent = msg;
+  el.hidden = false;
+  sacudirPantallaPortal();
+}
+
+function tocarElementoSello(elemento) {
+  secuenciaSello.push(elemento);
+  renderPuntosSello();
+  actualizarBotonesSello();
+  mostrarErrorSello('');
+}
+
+function borrarUltimoSello() {
+  secuenciaSello.pop();
+  renderPuntosSello();
+  actualizarBotonesSello();
+}
+
+async function manejarTrazoSello() {
+  if (secuenciaSello.length < LARGO_MINIMO_SELLO) return;
+  const selloGuardado = getSelloGuardado();
+
+  if (!selloGuardado) {
+    // Todavía no hay sello propio: la primera secuencia lo define, la
+    // segunda lo confirma.
+    if (!selloPendienteConfirmar) {
+      selloPendienteConfirmar = secuenciaSello.slice();
+      reiniciarTrazoSello();
+      document.getElementById('titulo-sello').textContent = 'Repetí tu sello';
+      document.getElementById('guia-sello').textContent = 'Trazalo una vez más para confirmarlo.';
+      return;
+    }
+
+    const coincide = selloPendienteConfirmar.length === secuenciaSello.length &&
+      selloPendienteConfirmar.every(function (el, i) { return el === secuenciaSello[i]; });
+    const selloConfirmado = secuenciaSello.slice();
+
+    selloPendienteConfirmar = null;
+    reiniciarTrazoSello();
+
+    if (!coincide) {
+      document.getElementById('titulo-sello').textContent = 'Elegí tu sello';
+      document.getElementById('guia-sello').textContent =
+        'No coincidió. Empecemos de nuevo: tocá los elementos en el orden que quieras recordar.';
+      mostrarErrorSello('Las dos veces trazaste algo distinto.');
+      return;
+    }
+
+    setSelloGuardado(await hashSecuencia(selloConfirmado));
+    mostrarPantalla('pantalla-inicio');
+    return;
+  }
+
+  const hash = await hashSecuencia(secuenciaSello);
+  reiniciarTrazoSello();
+  if (hash === selloGuardado) {
+    mostrarPantalla('pantalla-inicio');
+  } else {
+    mostrarErrorSello('Ese sello no es el tuyo. Probá de nuevo.');
+  }
+}
+
+function inicializarPortal() {
+  const hay = !!getSelloGuardado();
+  document.getElementById('titulo-sello').textContent = hay ? 'El umbral' : 'Elegí tu sello';
+  document.getElementById('guia-sello').textContent = hay
+    ? 'Trazá tu sello para que el oráculo se abra.'
+    : 'Tocá los elementos, en el orden que quieras recordar, para crear el sello que abrirá el oráculo de ahora en más.';
+  renderPuntosSello();
+  actualizarBotonesSello();
+
+  document.querySelectorAll('.elemento-sello').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      tocarElementoSello(btn.dataset.elemento);
+    });
+  });
+  alTocar('btn-borrar-sello', borrarUltimoSello);
+  alTocar('btn-trazar-sello', manejarTrazoSello);
+}
+
+/* ==========================================================================
    EVENTOS
    ========================================================================== */
 
@@ -3422,6 +3583,7 @@ function alTocar(id, manejador, evento) {
 }
 
 function inicializar() {
+  inicializarPortal();
   iniciarSentry();
   actualizarUiSentry();
   alTocar('btn-probar-sentry', probarSentry);
