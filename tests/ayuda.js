@@ -134,7 +134,30 @@ async function stubSupabase(page, activo, sentryDsn) {
   });
 }
 
-// Deja la app lista: clave de Gemini presente y servicios simulados.
+// Secuencia fija para pasar la pantalla del umbral en los tests: no importa
+// cuál sea, solo que sea siempre la misma para poder reproducirla.
+const SECUENCIA_UMBRAL_DE_PRUEBA = ['Fuego', 'Aire', 'Agua'];
+
+async function trazarSecuenciaUmbral(page, secuencia) {
+  for (const elemento of secuencia) {
+    await page.click('.elemento-sello[data-elemento="' + elemento + '"]');
+  }
+  await page.click('#btn-trazar-sello');
+}
+
+// La primera vez en cada contexto de test no hay sello guardado: hay que
+// trazarlo dos veces (una lo define, otra lo confirma) antes de que se abra
+// la pantalla de inicio de verdad.
+async function pasarUmbral(page, secuencia) {
+  secuencia = secuencia || SECUENCIA_UMBRAL_DE_PRUEBA;
+  await page.waitForSelector('#pantalla-portal.activa');
+  await trazarSecuenciaUmbral(page, secuencia);
+  await trazarSecuenciaUmbral(page, secuencia);
+  await page.waitForSelector('#pantalla-inicio.activa', { timeout: 10000 });
+}
+
+// Deja la app lista: clave de Gemini presente, servicios simulados y el
+// umbral ya cruzado.
 async function prepararApp(page, opciones) {
   opciones = opciones || {};
   await stubGemini(page, opciones.gemini);
@@ -150,6 +173,7 @@ async function prepararApp(page, opciones) {
     localStorage.setItem('geomancia_gemini_api_key', 'CLAVE-DE-PRUEBA');
   });
   await page.goto('/index.html', { waitUntil: 'domcontentloaded' });
+  await pasarUmbral(page);
 }
 
 // Recorre pregunta → generación → resultado.
@@ -176,4 +200,6 @@ module.exports = {
   iniciarSesion,
   stubGemini,
   stubSupabase,
+  pasarUmbral,
+  SECUENCIA_UMBRAL_DE_PRUEBA,
 };

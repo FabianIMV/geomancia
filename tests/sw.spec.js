@@ -7,6 +7,7 @@
 const { test, expect } = require('@playwright/test');
 const path = require('path');
 const fs = require('fs');
+const { pasarUmbral } = require('./ayuda');
 
 const fuenteSw = fs.readFileSync(path.join(__dirname, '..', 'sw.js'), 'utf8');
 
@@ -52,6 +53,7 @@ test.describe('Funcionamiento sin conexión', () => {
     try {
       await page.reload({ waitUntil: 'domcontentloaded' });
       await expect(page).toHaveTitle(/Geomancia/);
+      await pasarUmbral(page);
       await expect(page.locator('#btn-comenzar')).toBeVisible();
       // El JavaScript también tiene que haber sobrevivido, no solo el HTML.
       expect(await page.evaluate(() => typeof calcularEscudo)).toBe('function');
