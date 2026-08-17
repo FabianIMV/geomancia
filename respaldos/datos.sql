@@ -4,7 +4,7 @@ SET session_replication_role = replica;
 -- PostgreSQL database dump
 --
 
--- \restrict ebhlnLWv78b1wB1ZB9dUD1Cqdwnm73jCZnSPhtsFXAYyK0ltvqcPdOsZXlnjTrv
+-- \restrict 5LFGJMrhwAAiEBT6oDwXlCefX7VtrU7I2XfFPsLP0k4pxpsuShhFNSucr3z78hb
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.6
@@ -44,7 +44,7 @@ SET row_security = off;
 --
 
 INSERT INTO "auth"."users" ("instance_id", "id", "aud", "role", "email", "encrypted_password", "email_confirmed_at", "invited_at", "confirmation_token", "confirmation_sent_at", "recovery_token", "recovery_sent_at", "email_change_token_new", "email_change", "email_change_sent_at", "last_sign_in_at", "raw_app_meta_data", "raw_user_meta_data", "is_super_admin", "created_at", "updated_at", "phone", "phone_confirmed_at", "phone_change", "phone_change_token", "phone_change_sent_at", "email_change_token_current", "email_change_confirm_status", "banned_until", "reauthentication_token", "reauthentication_sent_at", "is_sso_user", "deleted_at", "is_anonymous") VALUES
-	('00000000-0000-0000-0000-000000000000', '4b455333-26d4-486a-9281-9dda59d1e695', 'authenticated', 'authenticated', 'fabianignaciomv@gmail.com', '$2a$10$TyRkEQASqXmydOcEXq89u.URBea2NccvK.7d1NZeGxIgUoNPpw3Vi', '2026-07-24 21:16:54.459058+00', NULL, '', NULL, '', NULL, '', '', NULL, '2026-07-25 02:18:27.551066+00', '{"provider": "email", "providers": ["email"]}', '{"sub": "4b455333-26d4-486a-9281-9dda59d1e695", "email": "fabianignaciomv@gmail.com", "email_verified": true, "phone_verified": false}', NULL, '2026-07-24 21:16:54.439366+00', '2026-08-07 16:40:49.82351+00', NULL, NULL, '', '', NULL, '', 0, NULL, '', NULL, false, NULL, false);
+	('00000000-0000-0000-0000-000000000000', '4b455333-26d4-486a-9281-9dda59d1e695', 'authenticated', 'authenticated', 'fabianignaciomv@gmail.com', '$2a$10$TyRkEQASqXmydOcEXq89u.URBea2NccvK.7d1NZeGxIgUoNPpw3Vi', '2026-07-24 21:16:54.459058+00', NULL, '', NULL, '', NULL, '', '', NULL, '2026-07-25 02:18:27.551066+00', '{"provider": "email", "providers": ["email"]}', '{"sub": "4b455333-26d4-486a-9281-9dda59d1e695", "email": "fabianignaciomv@gmail.com", "email_verified": true, "phone_verified": false}', NULL, '2026-07-24 21:16:54.439366+00', '2026-08-13 21:51:05.786823+00', NULL, NULL, '', '', NULL, '', 0, NULL, '', NULL, false, NULL, false);
 
 
 --
@@ -82,7 +82,7 @@ INSERT INTO "auth"."sessions" ("id", "user_id", "created_at", "updated_at", "fac
 	('6acc64ca-bc48-438f-98fc-02f55ee440ed', '4b455333-26d4-486a-9281-9dda59d1e695', '2026-07-24 21:38:11.811178+00', '2026-07-24 21:38:11.811178+00', NULL, 'aal1', NULL, NULL, 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_5_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/150.0.7871.113 Mobile/15E148 Safari/604.1', '186.107.196.247', NULL, NULL, NULL, NULL, NULL),
 	('f18914e0-af81-477b-a6b9-c5ac6c182bd0', '4b455333-26d4-486a-9281-9dda59d1e695', '2026-07-24 22:45:49.911257+00', '2026-07-24 22:45:49.911257+00', NULL, 'aal1', NULL, NULL, 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_5_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/150.0.7871.113 Mobile/15E148 Safari/604.1', '186.107.196.247', NULL, NULL, NULL, NULL, NULL),
 	('7a3a724c-ac47-498f-9ea1-07f46b103a13', '4b455333-26d4-486a-9281-9dda59d1e695', '2026-07-25 01:35:29.49979+00', '2026-07-25 01:35:29.49979+00', NULL, 'aal1', NULL, NULL, 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_5_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/150.0.7871.113 Mobile/15E148 Safari/604.1', '186.189.104.172', NULL, NULL, NULL, NULL, NULL),
-	('beb28c74-7dcb-49c8-934b-0ee558d06b0f', '4b455333-26d4-486a-9281-9dda59d1e695', '2026-07-25 02:18:27.551882+00', '2026-08-07 16:40:49.844836+00', NULL, 'aal1', NULL, '2026-08-07 16:40:49.844636', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5.2 Mobile/15E148 Safari/604.1', '181.173.145.43', NULL, NULL, NULL, NULL, NULL);
+	('beb28c74-7dcb-49c8-934b-0ee558d06b0f', '4b455333-26d4-486a-9281-9dda59d1e695', '2026-07-25 02:18:27.551882+00', '2026-08-13 21:51:05.811598+00', NULL, 'aal1', NULL, '2026-08-13 21:51:05.811424', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5.2 Mobile/15E148 Safari/604.1', '181.173.145.43', NULL, NULL, NULL, NULL, NULL);
 
 
 --
@@ -166,7 +166,13 @@ INSERT INTO "auth"."refresh_tokens" ("instance_id", "id", "token", "user_id", "r
 	('00000000-0000-0000-0000-000000000000', 21, 'hex4fhwfexca', '4b455333-26d4-486a-9281-9dda59d1e695', true, '2026-08-04 22:28:46.532476+00', '2026-08-07 13:49:11.519723+00', 'aiagjzubkl5i', 'beb28c74-7dcb-49c8-934b-0ee558d06b0f'),
 	('00000000-0000-0000-0000-000000000000', 22, 'xfjeujk3jyxj', '4b455333-26d4-486a-9281-9dda59d1e695', true, '2026-08-07 13:49:11.539439+00', '2026-08-07 15:04:34.87436+00', 'hex4fhwfexca', 'beb28c74-7dcb-49c8-934b-0ee558d06b0f'),
 	('00000000-0000-0000-0000-000000000000', 23, 'tytsuwe2q7es', '4b455333-26d4-486a-9281-9dda59d1e695', true, '2026-08-07 15:04:34.890791+00', '2026-08-07 16:40:49.805451+00', 'xfjeujk3jyxj', 'beb28c74-7dcb-49c8-934b-0ee558d06b0f'),
-	('00000000-0000-0000-0000-000000000000', 24, 'yadqdmoecnbd', '4b455333-26d4-486a-9281-9dda59d1e695', false, '2026-08-07 16:40:49.818595+00', '2026-08-07 16:40:49.818595+00', 'tytsuwe2q7es', 'beb28c74-7dcb-49c8-934b-0ee558d06b0f');
+	('00000000-0000-0000-0000-000000000000', 24, 'yadqdmoecnbd', '4b455333-26d4-486a-9281-9dda59d1e695', true, '2026-08-07 16:40:49.818595+00', '2026-08-11 20:16:46.15382+00', 'tytsuwe2q7es', 'beb28c74-7dcb-49c8-934b-0ee558d06b0f'),
+	('00000000-0000-0000-0000-000000000000', 25, 'vtujxdbfo2hs', '4b455333-26d4-486a-9281-9dda59d1e695', true, '2026-08-11 20:16:46.176717+00', '2026-08-13 00:22:29.617581+00', 'yadqdmoecnbd', 'beb28c74-7dcb-49c8-934b-0ee558d06b0f'),
+	('00000000-0000-0000-0000-000000000000', 26, 'lweoiswghet4', '4b455333-26d4-486a-9281-9dda59d1e695', true, '2026-08-13 00:22:29.635248+00', '2026-08-13 13:44:08.484087+00', 'vtujxdbfo2hs', 'beb28c74-7dcb-49c8-934b-0ee558d06b0f'),
+	('00000000-0000-0000-0000-000000000000', 27, 'ehgj76qxunec', '4b455333-26d4-486a-9281-9dda59d1e695', true, '2026-08-13 13:44:08.505867+00', '2026-08-13 18:15:13.408739+00', 'lweoiswghet4', 'beb28c74-7dcb-49c8-934b-0ee558d06b0f'),
+	('00000000-0000-0000-0000-000000000000', 28, 'lldsirhdw4bo', '4b455333-26d4-486a-9281-9dda59d1e695', true, '2026-08-13 18:15:13.425144+00', '2026-08-13 19:19:02.304404+00', 'ehgj76qxunec', 'beb28c74-7dcb-49c8-934b-0ee558d06b0f'),
+	('00000000-0000-0000-0000-000000000000', 29, 'd4mlziocvznc', '4b455333-26d4-486a-9281-9dda59d1e695', true, '2026-08-13 19:19:02.316888+00', '2026-08-13 21:51:05.755979+00', 'lldsirhdw4bo', 'beb28c74-7dcb-49c8-934b-0ee558d06b0f'),
+	('00000000-0000-0000-0000-000000000000', 30, 'p37tt3ye2dgh', '4b455333-26d4-486a-9281-9dda59d1e695', false, '2026-08-13 21:51:05.772967+00', '2026-08-13 21:51:05.772967+00', 'd4mlziocvznc', 'beb28c74-7dcb-49c8-934b-0ee558d06b0f');
 
 
 --
@@ -571,7 +577,53 @@ Esta duplicación explícita de Rubeus en ambas casas —reforzada por su presen
 No tome decisiones de vinculación bajo el efecto del enojo o la prisa. Reconozca el impulso reactivo propio antes de juzgar el del otro y fije reglas operativas claras y escritas desde el principio.
 
 ### Síntesis
-El acuerdo es viable en apariencia, pero se deteriorará hacia la rigidez y el conflicto a menos que ambas partes frenen su propia impulsividad y fijen límites concretos.', NULL, 'sin_verificar', NULL, '9e077587-f5cf-41c5-b179-0d3dcceedfd4');
+El acuerdo es viable en apariencia, pero se deteriorará hacia la rigidez y el conflicto a menos que ambas partes frenen su propia impulsividad y fijen límites concretos.', NULL, 'sin_verificar', NULL, '9e077587-f5cf-41c5-b179-0d3dcceedfd4'),
+	('fad8ee29-afbd-4ad1-b846-5da9c24b0f61', '4b455333-26d4-486a-9281-9dda59d1e695', '2026-08-11 20:26:10.96253+00', 'como sigue la relacion de aqui a fin de año', 'pareja', 'Pareja / socio', 7, '[[1, 2, 2, 2], [1, 2, 1, 1], [2, 2, 1, 2], [1, 2, 1, 1]]', '[[1, 1, 2, 1], [2, 2, 2, 2], [2, 1, 1, 1], [2, 1, 2, 1]]', '[[2, 2, 1, 1], [1, 2, 2, 1], [1, 1, 2, 1], [2, 2, 1, 2]]', '[1, 2, 1, 2]', '[1, 1, 1, 1]', '[2, 1, 2, 1]', '[1, 1, 2, 1]', '[[1, 2, 2, 2], [1, 2, 1, 1], [2, 2, 1, 2], [1, 2, 1, 1], [1, 1, 2, 1], [2, 2, 2, 2], [2, 1, 1, 1], [2, 1, 2, 1], [2, 2, 1, 1], [1, 2, 2, 1], [1, 1, 2, 1], [2, 2, 1, 2]]', '## Respuesta directa
+
+**Sí, pero…**
+
+El oráculo muestra que la relación se encamina hacia una obtención clara o un balance definido hacia fin de año, pero este desenlace trae consigo restricciones y un clima de encierro. Aunque el resultado apunta a consolidar un rumbo, el camino y el contexto del vínculo actual están marcados por la rigidez.
+
+**Lo que lo define:** La evolución del vínculo dependerá de cómo manejen los límites y las dificultades prácticas que ya se manifiestan en el día a día.
+
+---
+
+## La lectura
+
+H1 y H2. El escudo analizado se levantó **HOY**, el 11 de agosto de 2026, y es el único que juzga la pregunta presente. En una consulta anterior, fechada el 7 de agosto de 2026, el Juez de aquella tirada fue *Coniunctio* (figura ausente en el escudo actual, perteneciente exclusivamente a la tirada pasada), la cual indicó en su momento una tendencia hacia la ruptura y el distanciamiento. El hecho de que el Juez de hoy sea distinto marca un cambio en la fase del asunto: pasamos de la disolución a un escenario donde se concreta un resultado neto, aunque atravesado por tensiones estructurales.
+
+El Juez (**Acquisitio** (la sentencia general del asunto)) se inclina favorablemente hacia la obtención de un resultado tangible y la resolución del tema planteado. 
+
+En cuanto al camino, el **Testigo Derecho** (**Amissio** (la pérdida o la liberación de aquello que se sostiene)) refleja el estado o el pasado reciente del asunto por parte del consultante, orientado a soltar o dejar ir; mientras que el **Testigo Izquierdo** (**Via** (el camino, el tránsito neutral y el movimiento)) muestra que la contraparte o el flujo de los acontecimientos avanza sin una dirección fija pero en constante desplazamiento. 
+
+En la **Casa 7** (la pareja, los socios y los adversarios declarados), encontramos a **Caput Draconis** (la cabeza del dragón, favorable y de inicio), lo cual señala que la posición del vínculo en sí misma abre una nueva puerta o un punto de inflexión. 
+
+El estado del consultante, reflejado en la **Casa 1**, está ocupado por **Laetitia** (la alegría, favorable, elemento Fuego), una figura que se repite como Madre 1, mostrando un ánimo interno de desahogo o bienestar personal que contrasta con las dificultades externas del entorno.
+
+El **Reconciliador** (**Puer** (el niño, neutra-contextual)), que también aparece múltiples veces en esta tirada (en la Hija 1, la Sobrina 3, la Casa 5 y la Casa 11), aporta un matiz de impulsividad y energía marcial que influye en cómo el desenlace afecta al consultante, advirtiendo sobre reacciones apresuradas o falta de templanza ante los conflictos.
+
+Las Sobrinas muestran contrastes severos: **Fortuna Major** (la fortuna mayor, favorable) en la Sobrina 1 e Y **Albus** (el blanco, favorable, elemento Agua) en la Sobrina 4 aportan estabilidad y claridad, pero **Carcer** (la cáscara o la cárcel, desfavorable) en la Sobrina 2 —figura que también se repite en la Casa 10— introduce un fuerte componente de restricción y pesadez en el ámbito público o en las metas a largo plazo de la relación. 
+
+**Síntesis:** El asunto avanza hacia una resolución concreta guiada por la obtención de un balance final, pero este proceso exige sortear un marco de rigidez y posibles reacciones impulsivas que condicionan la estabilidad del vínculo de aquí a fin de año.', NULL, 'sin_verificar', NULL, '4c544e4c-8bf7-441b-b1bd-978baef4e444'),
+	('13535ce0-bbce-4443-917a-851460cb0d84', '4b455333-26d4-486a-9281-9dda59d1e695', '2026-08-11 20:28:57.456409+00', 'terminamos o no con mi pareja de cara a fin de año', 'pareja', 'Pareja / socio', 7, '[[2, 2, 2, 2], [2, 2, 2, 1], [2, 1, 2, 1], [2, 1, 2, 2]]', '[[2, 2, 2, 2], [2, 2, 1, 1], [2, 2, 2, 2], [2, 1, 1, 2]]', '[[2, 2, 2, 1], [2, 2, 2, 1], [2, 2, 1, 1], [2, 1, 1, 2]]', '[2, 2, 2, 2]', '[2, 1, 2, 1]', '[2, 1, 2, 1]', '[2, 1, 2, 1]', '[[2, 2, 2, 2], [2, 2, 2, 1], [2, 1, 2, 1], [2, 1, 2, 2], [2, 2, 2, 2], [2, 2, 1, 1], [2, 2, 2, 2], [2, 1, 1, 2], [2, 2, 2, 1], [2, 2, 2, 1], [2, 2, 1, 1], [2, 1, 1, 2]]', '## Respuesta directa
+**Sí, pero…**
+El vínculo avanza hacia un cierre o una definición contundente de cara a fin de año, pero este desenlace no llega de forma limpia ni alivia el malestar acumulado. La situación se encamina a cristalizarse en un formato rígido que requerirá lidiar con restricciones y un peso emocional sostenido.
+**Lo que lo define:** La evolución dependerá de cómo se gestionen las limitaciones prácticas y el desgaste cotidiano que ya pesan sobre ambas partes.
+
+---
+
+## La lectura
+El Juez (**Acquisitio**) determina la sentencia general del asunto: un resultado de obtención neta o cierre de balances, indicando que la situación actual llegará a una definición concreta y tangible hacia el final del período consultado. 
+
+En cuanto al camino que conduce a este desenlace, los Testigos muestran una polaridad clara. El Testigo Derecho (**Populus**) representa al consultante y al punto de partida del asunto, reflejando una postura pasiva, estática y sujeta al fluir de las circunstancias colectivas o externas, sin iniciativa propia para alterar el rumbo. El Testigo Izquierdo (**Acquisitio**) representa a la otra parte y al desarrollo de los acontecimientos, aportando una fuerza de acumulación y consolidación que empuja el desenlace hacia una resolución material.
+
+Al observar la casa del tema, la Casa 7 (Pareja, socios, adversarios declarados) contiene a **Populus**, lo que señala que el vínculo en sí mismo se encuentra en un estado de estancamiento, reflejando pasividad, dependencia del entorno o una espera inerte donde ninguna de las partes toma las riendas del cambio. La Casa 1 (el consultante, su cuerpo y su estado actual) también se encuentra ocupada por **Populus**, lo que refuerza la misma condición de espejo y falta de agencia individual en este momento, mostrando al consultante duplicando la energía estática de la relación.
+
+El Reconciliador (**Acquisitio**) modera el impacto del desenlace sobre el consultante repitiendo la figura de la sentencia, lo que indica que el resultado final traerá una ganancia o un cierre definitivo, aunque ese balance estará atravesado por las cargas restrictivas que dominan el trasfondo de la tirada. Las Sobrinas y Madres muestran una fuerte repetición de figuras pesadas, destacando a **Tristitia** y a **Rubeus** en la Casa 4 (hogar, padre, raíces, final del asunto), lo cual contradice la promesa de ganancia simple del Juez al imprimir un clima de amargura, bloqueo y final áspero en las bases del vínculo. 
+
+Cabe señalar que esta consulta se da en continuidad con un historial previo donde el Juez ha variado. En la consulta del 7 de agosto el Juez fue *Coniunctio* (de aquella tirada) apuntando a una unión o un quiebre reactivo, mientras que en la lectura anterior del mismo 11 de agosto el Juez fue **Acquisitio**, al igual que hoy, lo que muestra que la tendencia hacia una definición contundente se mantiene firme a lo largo de los días, estabilizándose en un balance inevitable. La geomancia no calcula fechas exactas, por lo que este desenlace no fija un día calendario, sino una tendencia ineludible hacia el cierre del ciclo. *Nota: Esta lectura es una guía simbólica y no sustituye el consejo profesional o legal en decisiones de esta magnitud.*
+
+**Síntesis:** El asunto se encamina hacia una definición material ineludible impulsada por la contraparte, mientras el consultante permanece en una postura estática, resultando en un cierre inevitable que, aunque define el rumbo, carga con restricciones y desgaste estructural.', NULL, 'sin_verificar', NULL, '4c544e4c-8bf7-441b-b1bd-978baef4e444');
 
 
 --
@@ -584,7 +636,8 @@ INSERT INTO "public"."uso_diario" ("user_id", "fecha", "consultas") VALUES
 	('4b455333-26d4-486a-9281-9dda59d1e695', '2026-07-27', 8),
 	('4b455333-26d4-486a-9281-9dda59d1e695', '2026-08-03', 2),
 	('4b455333-26d4-486a-9281-9dda59d1e695', '2026-08-04', 4),
-	('4b455333-26d4-486a-9281-9dda59d1e695', '2026-08-07', 3);
+	('4b455333-26d4-486a-9281-9dda59d1e695', '2026-08-07', 3),
+	('4b455333-26d4-486a-9281-9dda59d1e695', '2026-08-11', 3);
 
 
 --
@@ -633,13 +686,13 @@ INSERT INTO "public"."uso_diario" ("user_id", "fecha", "consultas") VALUES
 -- Name: refresh_tokens_id_seq; Type: SEQUENCE SET; Schema: auth; Owner: supabase_auth_admin
 --
 
-SELECT pg_catalog.setval('"auth"."refresh_tokens_id_seq"', 24, true);
+SELECT pg_catalog.setval('"auth"."refresh_tokens_id_seq"', 30, true);
 
 
 --
 -- PostgreSQL database dump complete
 --
 
--- \unrestrict ebhlnLWv78b1wB1ZB9dUD1Cqdwnm73jCZnSPhtsFXAYyK0ltvqcPdOsZXlnjTrv
+-- \unrestrict 5LFGJMrhwAAiEBT6oDwXlCefX7VtrU7I2XfFPsLP0k4pxpsuShhFNSucr3z78hb
 
 RESET ALL;
