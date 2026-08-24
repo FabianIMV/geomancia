@@ -4,7 +4,7 @@ SET session_replication_role = replica;
 -- PostgreSQL database dump
 --
 
--- \restrict 5LFGJMrhwAAiEBT6oDwXlCefX7VtrU7I2XfFPsLP0k4pxpsuShhFNSucr3z78hb
+-- \restrict 8ScH5M3AOQmLPfVgpTN1XESm82yuXQ9oQvJjJEF4dbpfJYBd50WJn9cNQTr7uLT
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.6
@@ -44,7 +44,7 @@ SET row_security = off;
 --
 
 INSERT INTO "auth"."users" ("instance_id", "id", "aud", "role", "email", "encrypted_password", "email_confirmed_at", "invited_at", "confirmation_token", "confirmation_sent_at", "recovery_token", "recovery_sent_at", "email_change_token_new", "email_change", "email_change_sent_at", "last_sign_in_at", "raw_app_meta_data", "raw_user_meta_data", "is_super_admin", "created_at", "updated_at", "phone", "phone_confirmed_at", "phone_change", "phone_change_token", "phone_change_sent_at", "email_change_token_current", "email_change_confirm_status", "banned_until", "reauthentication_token", "reauthentication_sent_at", "is_sso_user", "deleted_at", "is_anonymous") VALUES
-	('00000000-0000-0000-0000-000000000000', '4b455333-26d4-486a-9281-9dda59d1e695', 'authenticated', 'authenticated', 'fabianignaciomv@gmail.com', '$2a$10$TyRkEQASqXmydOcEXq89u.URBea2NccvK.7d1NZeGxIgUoNPpw3Vi', '2026-07-24 21:16:54.459058+00', NULL, '', NULL, '', NULL, '', '', NULL, '2026-07-25 02:18:27.551066+00', '{"provider": "email", "providers": ["email"]}', '{"sub": "4b455333-26d4-486a-9281-9dda59d1e695", "email": "fabianignaciomv@gmail.com", "email_verified": true, "phone_verified": false}', NULL, '2026-07-24 21:16:54.439366+00', '2026-08-13 21:51:05.786823+00', NULL, NULL, '', '', NULL, '', 0, NULL, '', NULL, false, NULL, false);
+	('00000000-0000-0000-0000-000000000000', '4b455333-26d4-486a-9281-9dda59d1e695', 'authenticated', 'authenticated', 'fabianignaciomv@gmail.com', '$2a$10$TyRkEQASqXmydOcEXq89u.URBea2NccvK.7d1NZeGxIgUoNPpw3Vi', '2026-07-24 21:16:54.459058+00', NULL, '', NULL, '', NULL, '', '', NULL, '2026-07-25 02:18:27.551066+00', '{"provider": "email", "providers": ["email"]}', '{"sub": "4b455333-26d4-486a-9281-9dda59d1e695", "email": "fabianignaciomv@gmail.com", "email_verified": true, "phone_verified": false}', NULL, '2026-07-24 21:16:54.439366+00', '2026-08-18 22:56:55.867214+00', NULL, NULL, '', '', NULL, '', 0, NULL, '', NULL, false, NULL, false);
 
 
 --
@@ -82,7 +82,7 @@ INSERT INTO "auth"."sessions" ("id", "user_id", "created_at", "updated_at", "fac
 	('6acc64ca-bc48-438f-98fc-02f55ee440ed', '4b455333-26d4-486a-9281-9dda59d1e695', '2026-07-24 21:38:11.811178+00', '2026-07-24 21:38:11.811178+00', NULL, 'aal1', NULL, NULL, 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_5_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/150.0.7871.113 Mobile/15E148 Safari/604.1', '186.107.196.247', NULL, NULL, NULL, NULL, NULL),
 	('f18914e0-af81-477b-a6b9-c5ac6c182bd0', '4b455333-26d4-486a-9281-9dda59d1e695', '2026-07-24 22:45:49.911257+00', '2026-07-24 22:45:49.911257+00', NULL, 'aal1', NULL, NULL, 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_5_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/150.0.7871.113 Mobile/15E148 Safari/604.1', '186.107.196.247', NULL, NULL, NULL, NULL, NULL),
 	('7a3a724c-ac47-498f-9ea1-07f46b103a13', '4b455333-26d4-486a-9281-9dda59d1e695', '2026-07-25 01:35:29.49979+00', '2026-07-25 01:35:29.49979+00', NULL, 'aal1', NULL, NULL, 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_5_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/150.0.7871.113 Mobile/15E148 Safari/604.1', '186.189.104.172', NULL, NULL, NULL, NULL, NULL),
-	('beb28c74-7dcb-49c8-934b-0ee558d06b0f', '4b455333-26d4-486a-9281-9dda59d1e695', '2026-07-25 02:18:27.551882+00', '2026-08-13 21:51:05.811598+00', NULL, 'aal1', NULL, '2026-08-13 21:51:05.811424', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5.2 Mobile/15E148 Safari/604.1', '181.173.145.43', NULL, NULL, NULL, NULL, NULL);
+	('beb28c74-7dcb-49c8-934b-0ee558d06b0f', '4b455333-26d4-486a-9281-9dda59d1e695', '2026-07-25 02:18:27.551882+00', '2026-08-18 22:56:55.885536+00', NULL, 'aal1', NULL, '2026-08-18 22:56:55.885426', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6 Mobile/15E148 Safari/604.1', '181.173.128.161', NULL, NULL, NULL, NULL, NULL);
 
 
 --
@@ -172,7 +172,8 @@ INSERT INTO "auth"."refresh_tokens" ("instance_id", "id", "token", "user_id", "r
 	('00000000-0000-0000-0000-000000000000', 27, 'ehgj76qxunec', '4b455333-26d4-486a-9281-9dda59d1e695', true, '2026-08-13 13:44:08.505867+00', '2026-08-13 18:15:13.408739+00', 'lweoiswghet4', 'beb28c74-7dcb-49c8-934b-0ee558d06b0f'),
 	('00000000-0000-0000-0000-000000000000', 28, 'lldsirhdw4bo', '4b455333-26d4-486a-9281-9dda59d1e695', true, '2026-08-13 18:15:13.425144+00', '2026-08-13 19:19:02.304404+00', 'ehgj76qxunec', 'beb28c74-7dcb-49c8-934b-0ee558d06b0f'),
 	('00000000-0000-0000-0000-000000000000', 29, 'd4mlziocvznc', '4b455333-26d4-486a-9281-9dda59d1e695', true, '2026-08-13 19:19:02.316888+00', '2026-08-13 21:51:05.755979+00', 'lldsirhdw4bo', 'beb28c74-7dcb-49c8-934b-0ee558d06b0f'),
-	('00000000-0000-0000-0000-000000000000', 30, 'p37tt3ye2dgh', '4b455333-26d4-486a-9281-9dda59d1e695', false, '2026-08-13 21:51:05.772967+00', '2026-08-13 21:51:05.772967+00', 'd4mlziocvznc', 'beb28c74-7dcb-49c8-934b-0ee558d06b0f');
+	('00000000-0000-0000-0000-000000000000', 30, 'p37tt3ye2dgh', '4b455333-26d4-486a-9281-9dda59d1e695', true, '2026-08-13 21:51:05.772967+00', '2026-08-18 22:56:55.832574+00', 'd4mlziocvznc', 'beb28c74-7dcb-49c8-934b-0ee558d06b0f'),
+	('00000000-0000-0000-0000-000000000000', 31, 'bvohfax37gyf', '4b455333-26d4-486a-9281-9dda59d1e695', false, '2026-08-18 22:56:55.854447+00', '2026-08-18 22:56:55.854447+00', 'p37tt3ye2dgh', 'beb28c74-7dcb-49c8-934b-0ee558d06b0f');
 
 
 --
@@ -623,7 +624,29 @@ El Reconciliador (**Acquisitio**) modera el impacto del desenlace sobre el consu
 
 Cabe señalar que esta consulta se da en continuidad con un historial previo donde el Juez ha variado. En la consulta del 7 de agosto el Juez fue *Coniunctio* (de aquella tirada) apuntando a una unión o un quiebre reactivo, mientras que en la lectura anterior del mismo 11 de agosto el Juez fue **Acquisitio**, al igual que hoy, lo que muestra que la tendencia hacia una definición contundente se mantiene firme a lo largo de los días, estabilizándose en un balance inevitable. La geomancia no calcula fechas exactas, por lo que este desenlace no fija un día calendario, sino una tendencia ineludible hacia el cierre del ciclo. *Nota: Esta lectura es una guía simbólica y no sustituye el consejo profesional o legal en decisiones de esta magnitud.*
 
-**Síntesis:** El asunto se encamina hacia una definición material ineludible impulsada por la contraparte, mientras el consultante permanece en una postura estática, resultando en un cierre inevitable que, aunque define el rumbo, carga con restricciones y desgaste estructural.', NULL, 'sin_verificar', NULL, '4c544e4c-8bf7-441b-b1bd-978baef4e444');
+**Síntesis:** El asunto se encamina hacia una definición material ineludible impulsada por la contraparte, mientras el consultante permanece en una postura estática, resultando en un cierre inevitable que, aunque define el rumbo, carga con restricciones y desgaste estructural.', NULL, 'sin_verificar', NULL, '4c544e4c-8bf7-441b-b1bd-978baef4e444'),
+	('f6cfd95d-8ca1-42bb-8033-f4530f8ec637', '4b455333-26d4-486a-9281-9dda59d1e695', '2026-08-18 22:59:38.572189+00', 'coomo se ve mi carrera de aqui a fin de año, en mi actual trabajo?', 'trabajo', 'Trabajo / carrera', 10, '[[2, 2, 2, 2], [1, 2, 2, 2], [1, 1, 1, 2], [1, 2, 1, 1]]', '[[2, 1, 1, 1], [2, 2, 1, 2], [2, 2, 1, 1], [2, 2, 2, 1]]', '[[1, 2, 2, 2], [2, 1, 2, 1], [2, 1, 2, 1], [2, 2, 1, 2]]', '[1, 1, 2, 1]', '[2, 1, 1, 1]', '[1, 2, 1, 2]', '[1, 2, 1, 2]', '[[2, 2, 2, 2], [1, 2, 2, 2], [1, 1, 1, 2], [1, 2, 1, 1], [2, 1, 1, 1], [2, 2, 1, 2], [2, 2, 1, 1], [2, 2, 2, 1], [1, 2, 2, 2], [2, 1, 2, 1], [2, 1, 2, 1], [2, 2, 1, 2]]', '## Respuesta directa
+**No, salvo que…**
+El panorama para tu carrera en lo que queda de año muestra una tendencia a dejar ir o perder posiciones, a pesar de que el ámbito del trabajo en sí mismo y la proyección pública muestran bases sólidas y expectativas de ganancia. El resultado general apunta hacia la reducción o el desprendimiento de lo que tienes ahora, lo que contrasta fuertemente con el esfuerzo acumulado.
+**Lo que lo define:** Se requiere revisar la desconexión entre lo que el entorno laboral ofrece en teoría y la realidad de los resultados finales, aceptando que aquello que se suelte o se pierda deberá gestionarse de manera consciente para no sufrir un retroceso mayor.
+
+## La lectura
+
+El análisis técnico de la consulta se estructura de la siguiente manera:
+
+En primer lugar, el Juez (la sentencia general del asunto) es **Amissio** (la pérdida o la acción de soltar), lo que indica que el veredicto general para este periodo es desfavorable en cuanto a la retención de estatus o beneficios actuales; señala un proceso de merma o desprendimiento en el ámbito profesional. 
+
+Para comprender el camino hacia esta sentencia, observamos a los Testigos. El Testigo Derecho (el consultante y el pasado del asunto) está ocupado por **Puer** (el niño, neutra-contextual), reflejando una postura impulsiva o de arranque individual en el origen de esta etapa. El Testigo Izquierdo (el entorno, las circunstancias externas o el desenlace) muestra a **Caput Draconis** (la cabeza del dragón, favorable), indicando que las oportunidades o las entradas externas se abren de manera propicia, aunque no logren evitar el desenlace señalado por el Juez. Cabe destacar que **Caput Draconis** también aparece repetido en Hija 1 y en la Casa 5, lo que refuerza una corriente constante de inicios favorables que provienen de los aspectos creativos o de oportunidades puntuales.
+
+Al examinar la casa relevante al tema, la Casa 10 (carrera, reputación y resultado público), encontramos a **Acquisitio** (la ganancia, favorable). Esta misma figura se repite de manera idéntica en la Sobrina 2, la Sobrina 3 y la Casa 11 (amigos y esperanzas), formando una fuerte línea de acumulación y beneficio potencial en lo referente a tus metas y redes. Aquí surge una contradicción interna evidente en los datos: mientras que la Casa 10 y sus soportes apuntan a la ganancia, el Juez definitivo sentencia pérdida (**Amissio**). En geomántica, cuando el Juez es adverso, la promesa de las casas de ganancia queda neutralizada por la incapacidad de retener dichos frutos.
+
+El estado del consultante se lee en la Casa 1 (el consultante y su cuerpo), donde se sitúa **Populus** (el pueblo, neutra-contextual). Esta figura se repite exactamente en la Madre 1, lo que señala una actitud de reflejar el entorno, de pasividad o de dejarse llevar por la corriente colectiva sin ejercer una dirección propia y firme.
+
+El Reconciliador es nuevamente **Amissio** (la pérdida o la acción de soltar). Al repetirse la figura del Juez en esta posición, el matiz sobre cómo afecta el desenlace al consultante es directo y sin atenuantes: el cierre de este ciclo implica inevitablemente una disminución o la renuncia a lo consolidado. 
+
+Como consejo accionable, dado que la iniciativa parte de una actitud influenciable (señalada en la Casa 1) y que el entorno ofrece vías de entrada (vistas en el Testigo Izquierdo), debes enfocar tu atención en proteger lo tangible y no confiar únicamente en las expectativas favorables de crecimiento que muestra el sector público de tu trabajo. La geomancia clásica de este sistema no calcula fechas ni plazos exactos de aquí a fin de año, sino que juzga la tendencia: el proceso actual es de depuración o pérdida material de lo alcanzado.
+
+En síntesis, aunque el terreno profesional muestra promesas de beneficio y entradas favorables, la sentencia general apunta a una pérdida o desprendimiento inevitable al final del ciclo, requiriendo que el consultante asuma una postura más activa y menos dependiente de las circunstancias externas. Recuerda que este análisis oracular es una guía de tendencias y no sustituye tus decisiones profesionales.', NULL, 'sin_verificar', NULL, NULL);
 
 
 --
@@ -637,7 +660,8 @@ INSERT INTO "public"."uso_diario" ("user_id", "fecha", "consultas") VALUES
 	('4b455333-26d4-486a-9281-9dda59d1e695', '2026-08-03', 2),
 	('4b455333-26d4-486a-9281-9dda59d1e695', '2026-08-04', 4),
 	('4b455333-26d4-486a-9281-9dda59d1e695', '2026-08-07', 3),
-	('4b455333-26d4-486a-9281-9dda59d1e695', '2026-08-11', 3);
+	('4b455333-26d4-486a-9281-9dda59d1e695', '2026-08-11', 3),
+	('4b455333-26d4-486a-9281-9dda59d1e695', '2026-08-18', 5);
 
 
 --
@@ -686,13 +710,13 @@ INSERT INTO "public"."uso_diario" ("user_id", "fecha", "consultas") VALUES
 -- Name: refresh_tokens_id_seq; Type: SEQUENCE SET; Schema: auth; Owner: supabase_auth_admin
 --
 
-SELECT pg_catalog.setval('"auth"."refresh_tokens_id_seq"', 30, true);
+SELECT pg_catalog.setval('"auth"."refresh_tokens_id_seq"', 31, true);
 
 
 --
 -- PostgreSQL database dump complete
 --
 
--- \unrestrict 5LFGJMrhwAAiEBT6oDwXlCefX7VtrU7I2XfFPsLP0k4pxpsuShhFNSucr3z78hb
+-- \unrestrict 8ScH5M3AOQmLPfVgpTN1XESm82yuXQ9oQvJjJEF4dbpfJYBd50WJn9cNQTr7uLT
 
 RESET ALL;
