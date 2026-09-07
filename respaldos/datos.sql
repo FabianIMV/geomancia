@@ -4,7 +4,7 @@ SET session_replication_role = replica;
 -- PostgreSQL database dump
 --
 
--- \restrict lfjbHrHaCCbtF5RcMZI4pJfYXMi1njizET12m2p1PnRbFq1A8rnEGCCYicnweOI
+-- \restrict JX2vJ9ndlaOC7y3qpzgQBq54dE5SgiKQF6rZB7BIn4v24CWuEwornrE8NekszQb
 
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.6
@@ -44,7 +44,7 @@ SET row_security = off;
 --
 
 INSERT INTO "auth"."users" ("instance_id", "id", "aud", "role", "email", "encrypted_password", "email_confirmed_at", "invited_at", "confirmation_token", "confirmation_sent_at", "recovery_token", "recovery_sent_at", "email_change_token_new", "email_change", "email_change_sent_at", "last_sign_in_at", "raw_app_meta_data", "raw_user_meta_data", "is_super_admin", "created_at", "updated_at", "phone", "phone_confirmed_at", "phone_change", "phone_change_token", "phone_change_sent_at", "email_change_token_current", "email_change_confirm_status", "banned_until", "reauthentication_token", "reauthentication_sent_at", "is_sso_user", "deleted_at", "is_anonymous") VALUES
-	('00000000-0000-0000-0000-000000000000', '4b455333-26d4-486a-9281-9dda59d1e695', 'authenticated', 'authenticated', 'fabianignaciomv@gmail.com', '$2a$10$TyRkEQASqXmydOcEXq89u.URBea2NccvK.7d1NZeGxIgUoNPpw3Vi', '2026-07-24 21:16:54.459058+00', NULL, '', NULL, '', NULL, '', '', NULL, '2026-07-25 02:18:27.551066+00', '{"provider": "email", "providers": ["email"]}', '{"sub": "4b455333-26d4-486a-9281-9dda59d1e695", "email": "fabianignaciomv@gmail.com", "email_verified": true, "phone_verified": false}', NULL, '2026-07-24 21:16:54.439366+00', '2026-08-28 18:30:23.654418+00', NULL, NULL, '', '', NULL, '', 0, NULL, '', NULL, false, NULL, false);
+	('00000000-0000-0000-0000-000000000000', '4b455333-26d4-486a-9281-9dda59d1e695', 'authenticated', 'authenticated', 'fabianignaciomv@gmail.com', '$2a$10$TyRkEQASqXmydOcEXq89u.URBea2NccvK.7d1NZeGxIgUoNPpw3Vi', '2026-07-24 21:16:54.459058+00', NULL, '', NULL, '', NULL, '', '', NULL, '2026-07-25 02:18:27.551066+00', '{"provider": "email", "providers": ["email"]}', '{"sub": "4b455333-26d4-486a-9281-9dda59d1e695", "email": "fabianignaciomv@gmail.com", "email_verified": true, "phone_verified": false}', NULL, '2026-07-24 21:16:54.439366+00', '2026-08-31 20:16:57.088724+00', NULL, NULL, '', '', NULL, '', 0, NULL, '', NULL, false, NULL, false);
 
 
 --
@@ -82,7 +82,7 @@ INSERT INTO "auth"."sessions" ("id", "user_id", "created_at", "updated_at", "fac
 	('6acc64ca-bc48-438f-98fc-02f55ee440ed', '4b455333-26d4-486a-9281-9dda59d1e695', '2026-07-24 21:38:11.811178+00', '2026-07-24 21:38:11.811178+00', NULL, 'aal1', NULL, NULL, 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_5_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/150.0.7871.113 Mobile/15E148 Safari/604.1', '186.107.196.247', NULL, NULL, NULL, NULL, NULL),
 	('f18914e0-af81-477b-a6b9-c5ac6c182bd0', '4b455333-26d4-486a-9281-9dda59d1e695', '2026-07-24 22:45:49.911257+00', '2026-07-24 22:45:49.911257+00', NULL, 'aal1', NULL, NULL, 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_5_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/150.0.7871.113 Mobile/15E148 Safari/604.1', '186.107.196.247', NULL, NULL, NULL, NULL, NULL),
 	('7a3a724c-ac47-498f-9ea1-07f46b103a13', '4b455333-26d4-486a-9281-9dda59d1e695', '2026-07-25 01:35:29.49979+00', '2026-07-25 01:35:29.49979+00', NULL, 'aal1', NULL, NULL, 'Mozilla/5.0 (iPhone; CPU iPhone OS 26_5_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/150.0.7871.113 Mobile/15E148 Safari/604.1', '186.189.104.172', NULL, NULL, NULL, NULL, NULL),
-	('beb28c74-7dcb-49c8-934b-0ee558d06b0f', '4b455333-26d4-486a-9281-9dda59d1e695', '2026-07-25 02:18:27.551882+00', '2026-08-28 18:30:23.675254+00', NULL, 'aal1', NULL, '2026-08-28 18:30:23.675129', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6 Mobile/15E148 Safari/604.1', '186.107.199.161', NULL, NULL, NULL, NULL, NULL);
+	('beb28c74-7dcb-49c8-934b-0ee558d06b0f', '4b455333-26d4-486a-9281-9dda59d1e695', '2026-07-25 02:18:27.551882+00', '2026-08-31 20:16:57.10512+00', NULL, 'aal1', NULL, '2026-08-31 20:16:57.10496', 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6 Mobile/15E148 Safari/604.1', '186.107.199.161', NULL, NULL, NULL, NULL, NULL);
 
 
 --
@@ -174,7 +174,8 @@ INSERT INTO "auth"."refresh_tokens" ("instance_id", "id", "token", "user_id", "r
 	('00000000-0000-0000-0000-000000000000', 29, 'd4mlziocvznc', '4b455333-26d4-486a-9281-9dda59d1e695', true, '2026-08-13 19:19:02.316888+00', '2026-08-13 21:51:05.755979+00', 'lldsirhdw4bo', 'beb28c74-7dcb-49c8-934b-0ee558d06b0f'),
 	('00000000-0000-0000-0000-000000000000', 30, 'p37tt3ye2dgh', '4b455333-26d4-486a-9281-9dda59d1e695', true, '2026-08-13 21:51:05.772967+00', '2026-08-18 22:56:55.832574+00', 'd4mlziocvznc', 'beb28c74-7dcb-49c8-934b-0ee558d06b0f'),
 	('00000000-0000-0000-0000-000000000000', 31, 'bvohfax37gyf', '4b455333-26d4-486a-9281-9dda59d1e695', true, '2026-08-18 22:56:55.854447+00', '2026-08-28 18:30:23.621426+00', 'p37tt3ye2dgh', 'beb28c74-7dcb-49c8-934b-0ee558d06b0f'),
-	('00000000-0000-0000-0000-000000000000', 32, 'gjgojihcads2', '4b455333-26d4-486a-9281-9dda59d1e695', false, '2026-08-28 18:30:23.640747+00', '2026-08-28 18:30:23.640747+00', 'bvohfax37gyf', 'beb28c74-7dcb-49c8-934b-0ee558d06b0f');
+	('00000000-0000-0000-0000-000000000000', 32, 'gjgojihcads2', '4b455333-26d4-486a-9281-9dda59d1e695', true, '2026-08-28 18:30:23.640747+00', '2026-08-31 20:16:57.052388+00', 'bvohfax37gyf', 'beb28c74-7dcb-49c8-934b-0ee558d06b0f'),
+	('00000000-0000-0000-0000-000000000000', 33, 'bjy3lmjfztbv', '4b455333-26d4-486a-9281-9dda59d1e695', false, '2026-08-31 20:16:57.07984+00', '2026-08-31 20:16:57.07984+00', 'gjgojihcads2', 'beb28c74-7dcb-49c8-934b-0ee558d06b0f');
 
 
 --
@@ -663,7 +664,8 @@ INSERT INTO "public"."uso_diario" ("user_id", "fecha", "consultas") VALUES
 	('4b455333-26d4-486a-9281-9dda59d1e695', '2026-08-07', 3),
 	('4b455333-26d4-486a-9281-9dda59d1e695', '2026-08-11', 3),
 	('4b455333-26d4-486a-9281-9dda59d1e695', '2026-08-18', 5),
-	('4b455333-26d4-486a-9281-9dda59d1e695', '2026-08-28', 2);
+	('4b455333-26d4-486a-9281-9dda59d1e695', '2026-08-28', 2),
+	('4b455333-26d4-486a-9281-9dda59d1e695', '2026-08-31', 3);
 
 
 --
@@ -712,13 +714,13 @@ INSERT INTO "public"."uso_diario" ("user_id", "fecha", "consultas") VALUES
 -- Name: refresh_tokens_id_seq; Type: SEQUENCE SET; Schema: auth; Owner: supabase_auth_admin
 --
 
-SELECT pg_catalog.setval('"auth"."refresh_tokens_id_seq"', 32, true);
+SELECT pg_catalog.setval('"auth"."refresh_tokens_id_seq"', 33, true);
 
 
 --
 -- PostgreSQL database dump complete
 --
 
--- \unrestrict lfjbHrHaCCbtF5RcMZI4pJfYXMi1njizET12m2p1PnRbFq1A8rnEGCCYicnweOI
+-- \unrestrict JX2vJ9ndlaOC7y3qpzgQBq54dE5SgiKQF6rZB7BIn4v24CWuEwornrE8NekszQb
 
 RESET ALL;
