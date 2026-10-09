@@ -16,7 +16,7 @@ jobs:
   respaldar:
     name: Volcado semanal
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
@@ -54,10 +54,31 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        # Con reintentos: el pooler de Supabase a veces responde un rato con
+        # "EAUTHQUERY ... connection to database not available" (la base se
+        # está reiniciando o despertando), y sin esto se pierde el respaldo de
+        # toda la semana por un corte de segundos. Se vuelca a un temporal y
+        # se mueve al final, así un intento a medias no pisa el respaldo bueno.
         run: |
           mkdir -p respaldos
-          supabase db dump --data-only -f "respaldos/datos.sql"
-          supabase db dump -f "respaldos/esquema.sql"
+          volcar() {
+            destino="$1"; shift
+            for intento in 1 2 3 4 5; do
+              if supabase db dump "$@" -f "$destino.tmp"; then
+                mv "$destino.tmp" "$destino"
+                return 0
+              fi
+              rm -f "$destino.tmp"
+              [ "$intento" -lt 5 ] || break
+              espera=$((intento * 30))
+              echo "::warning::Falló el volcado de $destino (intento $intento/5); reintento en ${espera}s."
+              sleep "$espera"
+            done
+            echo "::error::No se pudo volcar $destino tras 5 intentos."
+            return 1
+          }
+          volcar respaldos/datos.sql --data-only
+          volcar respaldos/esquema.sql
 
       - name: Commitear si cambió algo
         if: steps.secretos.outputs.listos == 'si'
