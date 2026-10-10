@@ -11,7 +11,10 @@
 
 const MODELOS = ['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-flash-lite-latest'];
 const LIMITE_DIARIO = Number(Deno.env.get('LIMITE_CONSULTAS_DIARIAS') ?? '40');
-const TIMEOUT_MS = 25000;
+// Con el razonamiento encendido cada modelo tarda más; Supabase corta la
+// función a los 150 s, y la cadena de tres modelos tiene que caber.
+const TIMEOUT_MS = 45000;
+const PRESUPUESTO_RAZONAMIENTO = 3072;
 const LARGO_MAXIMO_PROMPT = 20000;
 
 const CORS = {
@@ -38,12 +41,16 @@ async function llamarModelo(
 ): Promise<string> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
+  // Mismos valores que app.js (llamarGeminiConModelo): temperatura baja porque
+  // es una lectura atada a datos, y razonamiento encendido — con
+  // thinkingBudget 0 el modelo escribía sin cruzar las posiciones y se
+  // equivocaba. El razonamiento sale del mismo tope de tokens de salida.
   const generationConfig: Record<string, unknown> = {
-    temperature: 0.6,
+    temperature: 0.4,
     topP: 0.9,
-    maxOutputTokens: conThinking ? 4096 : 8192,
+    maxOutputTokens: conThinking ? 12288 : 8192,
   };
-  if (conThinking) generationConfig.thinkingConfig = { thinkingBudget: 0 };
+  if (conThinking) generationConfig.thinkingConfig = { thinkingBudget: PRESUPUESTO_RAZONAMIENTO };
 
   const controlador = new AbortController();
   const temporizador = setTimeout(() => controlador.abort(), TIMEOUT_MS);
