@@ -717,6 +717,132 @@ const TEMAS = [
 ];
 
 /* ==========================================================================
+   VALENCIA DE CADA FIGURA SEGÚN EL TEMA
+
+   La `naturaleza` de FIGURAS es genérica, y aplicada a ciegas produce
+   errores de lectura: Amissio (Venus) es mala para retener dinero pero
+   clásicamente buena en el amor, donde significa dar y entregarse; leerla
+   como "pérdida del vínculo" en una pregunta de pareja es usar su sentido
+   material en una pregunta afectiva. Esta tabla da la valencia por tema.
+
+   Fuente: lectura conservadora de J. M. Greer, "The Art and Practice of
+   Geomancy", y de Agrippa. Regla: si una celda no es clara en esas fuentes,
+   queda NEUTRA y no se inventa. Lo que no figura en `temas` toma `base`.
+   Las notas explican el porqué cuando la valencia contradice la intuición
+   o depende de lo que se busque.
+   ========================================================================== */
+
+const VALENCIA = {
+  'Acquisitio': {
+    base: 'favorable',
+    temas: { salud: 'neutra', oculto: 'neutra' },
+    notas: { salud: 'Ganar también puede ser ganar la enfermedad: no se toma como buena señal sin más.' },
+  },
+  'Amissio': {
+    base: 'desfavorable',
+    temas: { pareja: 'favorable', salud: 'neutra', viaje: 'neutra', oculto: 'neutra', general: 'neutra' },
+    notas: {
+      pareja: 'Figura de Venus: en el amor significa dar y entregarse al otro, no perder el vínculo. No leerla como ruptura.',
+      salud: 'Favorable si se trata de dejar atrás una enfermedad; desfavorable si se teme perder fuerzas.',
+      dinero: 'Lo que entra se va: malo para ganar o recuperar.',
+    },
+  },
+  'Fortuna Major': {
+    base: 'favorable',
+    temas: {},
+    notas: { general: 'Éxito que se sostiene y llega por mérito propio; más lento que rápido.' },
+  },
+  'Fortuna Minor': {
+    base: 'favorable',
+    temas: { hogar: 'neutra', pareja: 'neutra' },
+    notas: {
+      viaje: 'Favorece lo que pasa y se mueve rápido.',
+      hogar: 'Ayuda poco a lo que debe durar.',
+      pareja: 'Ayuda poco a lo que debe durar.',
+    },
+  },
+  'Laetitia': { base: 'favorable', temas: {}, notas: {} },
+  'Tristitia': {
+    base: 'desfavorable',
+    temas: { hogar: 'neutra', oculto: 'neutra' },
+    notas: { hogar: 'Buena para lo que se construye y se asienta en la tierra (casa, terreno); mala para la alegría del hogar.' },
+  },
+  'Puella': {
+    base: 'favorable',
+    temas: { pleito: 'neutra' },
+    notas: { pareja: 'Especialmente buena en el amor.', pleito: 'Favorece la paz y el acuerdo, no la pelea.' },
+  },
+  'Puer': {
+    base: 'neutra',
+    temas: { pleito: 'favorable', salud: 'desfavorable', hogar: 'desfavorable' },
+    notas: { pleito: 'Buena para el combate y la confrontación.', salud: 'Fiebre, inflamación, golpes.' },
+  },
+  'Rubeus': {
+    base: 'desfavorable',
+    temas: {},
+    notas: { general: 'Mala en todo asunto bueno; solo "favorece" lo que ya es destructivo.' },
+  },
+  'Albus': {
+    base: 'favorable',
+    temas: { pleito: 'neutra' },
+    notas: { pleito: 'Paz y negociación; débil si hay que pelear.' },
+  },
+  'Coniunctio': {
+    base: 'neutra',
+    temas: { pareja: 'favorable' },
+    notas: {
+      pareja: 'Unión: buena para juntarse o asociarse.',
+      dinero: 'Ayuda a encontrar un objeto perdido; neutra para ganar dinero.',
+      general: 'Buena con lo bueno, mala con lo malo: une lo que haya.',
+    },
+  },
+  'Carcer': {
+    base: 'desfavorable',
+    temas: { hogar: 'favorable', dinero: 'neutra', trabajo: 'neutra', pareja: 'neutra', oculto: 'neutra' },
+    notas: {
+      hogar: 'Estabilidad y retención: lo que se tiene se conserva.',
+      dinero: 'Bueno para retener o guardar, malo para ganar más.',
+      trabajo: 'Retiene lo que hay; no abre nada nuevo.',
+      pareja: 'Ata: puede ser compromiso o encierro según el caso.',
+      viaje: 'Contraria a moverse: el viaje se traba o no sale.',
+    },
+  },
+  'Caput Draconis': {
+    base: 'favorable',
+    temas: { oculto: 'neutra' },
+    notas: { general: 'Buena para empezar algo: abre una puerta.' },
+  },
+  'Cauda Draconis': {
+    base: 'desfavorable',
+    temas: { salud: 'neutra', oculto: 'neutra' },
+    notas: { general: 'Buena solo para terminar o salir de algo.', salud: 'Buena si se trata de que algo termine o se vaya.' },
+  },
+  'Populus': {
+    base: 'neutra',
+    temas: {},
+    notas: { general: 'Refleja lo que la rodea: buena con lo bueno, mala con lo malo.' },
+  },
+  'Via': {
+    base: 'desfavorable',
+    temas: { viaje: 'favorable', salud: 'neutra', pleito: 'neutra', oculto: 'neutra', general: 'neutra' },
+    notas: {
+      viaje: 'Favorece viajes y cambios.',
+      hogar: 'Contraria a la permanencia: algo se mueve o se va.',
+      general: 'Cambio: favorece lo que debe moverse, desfavorece lo que debe quedarse.',
+    },
+  },
+};
+
+/* Valencia de una figura para un tema concreto, con su nota si la hay. */
+function valenciaPara(nombre, temaId) {
+  const v = VALENCIA[nombre];
+  if (!v) return { valencia: 'neutra', nota: '' };
+  const valencia = (temaId && v.temas[temaId]) || v.base;
+  const nota = (temaId && v.notas[temaId]) || v.notas.general || '';
+  return { valencia: valencia, nota: nota };
+}
+
+/* ==========================================================================
    MATEMÁTICA DEL ESCUDO
    ========================================================================== */
 
@@ -790,20 +916,127 @@ function posicionesDeEscudo(escudo, casas) {
   return pares;
 }
 
-/* Qué figura se repite y en qué posiciones. Se calcula en JavaScript, no se
-   le pide al modelo que la descubra por su cuenta (antes, regla 9 dejaba
-   la detección librada al modelo). */
-function detectarRepeticiones(escudo, casas) {
-  const mapa = {};
-  posicionesDeEscudo(escudo, casas).forEach(function (par) {
-    const nombre = figuraPorPuntos(par[1]).nombre;
-    (mapa[nombre] = mapa[nombre] || []).push(par[0]);
+/* Qué figura se repite, calculado en JavaScript y no por el modelo.
+
+   Madre N, Hija N y Sobrina N SON las casas N, N+4 y N+8: la misma figura
+   en el mismo lugar, no dos apariciones. La versión anterior las contaba
+   dos veces ("Madre 1" y "Casa 1") e inflaba cualquier figura de las doce
+   primeras posiciones; el modelo leía "aparece 5 veces" donde había 2. Por
+   eso se cuenta solo sobre las 12 casas, y aparte se dice si los Testigos,
+   el Juez o el Reconciliador coinciden con alguna figura de casa. */
+function repeticionesReales(casas, escudo) {
+  const porFigura = {};
+  casas.forEach(function (puntos, i) {
+    const nombre = figuraPorPuntos(puntos).nombre;
+    (porFigura[nombre] = porFigura[nombre] || []).push(i + 1);
   });
 
-  return Object.keys(mapa)
-    .filter(function (n) { return mapa[n].length > 1; })
-    .sort(function (a, b) { return mapa[b].length - mapa[a].length; })
-    .map(function (n) { return n + ' aparece ' + mapa[n].length + ' veces: ' + mapa[n].join(', ') + '.'; });
+  const enCasas = Object.keys(porFigura)
+    .filter(function (n) { return porFigura[n].length > 1; })
+    .sort(function (a, b) { return porFigura[b].length - porFigura[a].length || porFigura[a][0] - porFigura[b][0]; })
+    .map(function (n) { return { figura: n, casas: porFigura[n] }; });
+
+  const coincidencias = [
+    ['Testigo Derecho', escudo.testigoDerecho],
+    ['Testigo Izquierdo', escudo.testigoIzquierdo],
+    ['Juez', escudo.juez],
+    ['Reconciliador', escudo.reconciliador],
+  ].map(function (par) {
+    const nombre = figuraPorPuntos(par[1]).nombre;
+    return { posicion: par[0], figura: nombre, casas: porFigura[nombre] || [] };
+  }).filter(function (c) { return c.casas.length > 0; });
+
+  return { enCasas: enCasas, coincidencias: coincidencias };
+}
+
+function detectarRepeticiones(escudo, casas) {
+  const r = repeticionesReales(casas, escudo);
+  const lineas = r.enCasas.map(function (x) {
+    return x.figura + ' está en ' + x.casas.length + ' casas: ' +
+      x.casas.map(function (c) { return 'Casa ' + c; }).join(', ') + '.';
+  });
+  r.coincidencias.forEach(function (c) {
+    lineas.push('El ' + c.posicion + ' (' + c.figura + ') es la misma figura que ' +
+      c.casas.map(function (n) { return 'la Casa ' + n; }).join(' y ') + '.');
+  });
+  return lineas;
+}
+
+/* Reconciliador = Juez + Madre 1. Por aritmética hay dos casos en que no
+   dice nada nuevo: con Madre 1 = Populus sale idéntico al Juez, y con
+   Juez = Madre 1 sale siempre Populus. En esos casos no se interpreta. */
+function reconciliadorInformativo(escudo) {
+  const madre1 = figuraPorPuntos(escudo.madres[0]).nombre;
+  const juez = figuraPorPuntos(escudo.juez).nombre;
+  if (madre1 === 'Populus') {
+    return { informativo: false, motivo: 'La Madre 1 es Populus, así que el Reconciliador repite al Juez.' };
+  }
+  if (juez === madre1) {
+    return { informativo: false, motivo: 'El Juez es igual a la Madre 1, así que el Reconciliador sale Populus por aritmética.' };
+  }
+  return { informativo: true, motivo: '' };
+}
+
+/* Las dos casas vecinas, con vuelta: la 12 es vecina de la 1. */
+function casasAdyacentes(casa) {
+  return [casa === 1 ? 12 : casa - 1, casa === 12 ? 1 : casa + 1];
+}
+
+/* Perfección entre el significador del consultante (casa 1) y el del asunto
+   (casa del tema, Q): dice si el asunto llega a concretarse. Se evalúa en
+   este orden y gana el primer modo que se cumple:
+     1. ocupación   — la misma figura en la casa 1 y en la Q;
+     2. conjunción  — la figura de la 1 en una vecina de Q, o la de Q en una
+                      vecina de la 1 (sin contar las casas 1 y Q mismas);
+     3. mutación    — las dos figuras juntas en un par de casas vecinas en
+                      otra parte de la carta (fuera de la 1 y la Q);
+     4. traslación  — una tercera figura en una vecina de la 1 y también en
+                      una vecina de Q (dos casas distintas: la figura tiene
+                      que repetirse para hacer de puente);
+     5. negación    — ninguno de los anteriores.
+   Devuelve { modo, figura, casas }; `figura` y `casas` dicen qué la produce.
+   Sin casa del tema (consulta general) no hay perfección que calcular. */
+function calcularPerfeccion(casas, casaTema) {
+  if (!casaTema || casaTema === 1) return { modo: 'no_aplica', figura: null, casas: [] };
+
+  const fig = function (n) { return figuraPorPuntos(casas[n - 1]).nombre; };
+  const consultante = fig(1);
+  const asunto = fig(casaTema);
+  const fueraDe = function (excluidas) {
+    return function (n) { return excluidas.indexOf(n) === -1; };
+  };
+
+  if (consultante === asunto) {
+    return { modo: 'ocupacion', figura: consultante, casas: [1, casaTema] };
+  }
+
+  const juntoAQ = casasAdyacentes(casaTema).filter(fueraDe([1, casaTema]))
+    .filter(function (n) { return fig(n) === consultante; });
+  if (juntoAQ.length) return { modo: 'conjuncion', figura: consultante, casas: [juntoAQ[0]] };
+
+  const juntoA1 = casasAdyacentes(1).filter(fueraDe([1, casaTema]))
+    .filter(function (n) { return fig(n) === asunto; });
+  if (juntoA1.length) return { modo: 'conjuncion', figura: asunto, casas: [juntoA1[0]] };
+
+  for (let n = 1; n <= 12; n++) {
+    const siguiente = n === 12 ? 1 : n + 1;
+    if ([n, siguiente].some(function (c) { return c === 1 || c === casaTema; })) continue;
+    const par = [fig(n), fig(siguiente)];
+    if ((par[0] === consultante && par[1] === asunto) || (par[0] === asunto && par[1] === consultante)) {
+      return { modo: 'mutacion', figura: null, casas: [n, siguiente] };
+    }
+  }
+
+  const vecinasDe1 = casasAdyacentes(1).filter(fueraDe([1, casaTema])).sort(function (a, b) { return a - b; });
+  const vecinasDeQ = casasAdyacentes(casaTema).filter(fueraDe([1, casaTema])).sort(function (a, b) { return a - b; });
+  for (const a of vecinasDe1) {
+    const puente = fig(a);
+    if (puente === consultante || puente === asunto) continue;
+    const b = vecinasDeQ.find(function (n) { return n !== a && fig(n) === puente; });
+    if (b) return { modo: 'traslacion', figura: puente, casas: [a, b].sort(function (x, y) { return x - y; }) };
+  }
+
+  return { modo: 'negacion', figura: null, casas: [] };
 }
 
 /* Recalcula el escudo desde las madres y compara con lo que trae el objeto.
@@ -1165,38 +1398,49 @@ function renderizarCartaCasas() {
 
 const INSTRUCCIONES_SISTEMA =
   'Eres un geomante hermético clásico, riguroso y honesto. Reglas estrictas:\n' +
-  '1. La geomancia es un oráculo de VEREDICTO sobre asuntos externos y concretos. Tu trabajo es juzgar, no consolar. Si el Juez es desfavorable (Amissio en pregunta de ganancia, Carcer, Rubeus, Cauda Draconis, Tristitia según contexto), dilo sin rodeos y explica qué indica.\n' +
-  '2. Jerarquía de lectura: (a) el JUEZ como sentencia general del asunto, (b) los dos Testigos como el camino hacia esa sentencia (Testigo Derecho = el consultante/el pasado del asunto, Testigo Izquierdo = el otro/el desenlace), (c) la figura en la CASA RELEVANTE al tema preguntado, (d) la figura en casa 1 como estado del consultante, (e) el RECONCILIADOR como matiz de cómo el desenlace afecta al consultante, (f) casa 4 como final del asunto si aporta.\n' +
-  '3. Considera la naturaleza de cada figura EN CONTEXTO (esto es guía para TU razonamiento interno, no para citar figuras ajenas a la tirada): Amissio es mala para retener pero buena para soltar deudas o enfermedades; Fortuna Minor favorece lo rápido y Fortuna Major lo lento; Puer y Rubeus advierten impulsividad; Populus refleja, no decide. Si en el texto necesitas contrastar, describe la CUALIDAD (p. ej. "favorece lo rápido más que lo sostenido") sin nombrar una figura que no esté en esta tirada.\n' +
-  '4. Responde la pregunta concreta que se hizo. La geomancia contesta \'¿resultará X?\' con sí matizado, no matizado, o sí/no condicionado. Comprométete con un veredicto (sí matizado / no matizado / condicionado) y su condición, pero NO uses lenguaje de garantía ni certeza sobre eventos futuros: evita \'garantiza\', \'asegura\', \'está garantizado\', \'altamente probable\'. La geomancia juzga la tendencia y la condición del asunto, no certifica resultados.\n' +
+  '1. La geomancia es un oráculo de VEREDICTO sobre asuntos externos y concretos. Tu trabajo es juzgar, no consolar; pero tampoco dramatizar: di lo que la carta sostiene, ni más ni menos.\n' +
+  '2. JERARQUÍA DE PESO, de mayor a menor. No la alteres:\n' +
+  '   (1) La PERFECCIÓN (bloque "PERFECCIÓN"): decide si el asunto SE CONCRETA. Si perfecciona, se concreta; si es negación, no se concreta como se pregunta. Manda sobre todo lo demás, incluido el Juez.\n' +
+  '   (2) La figura de la CASA DEL TEMA, con su valencia para este tema: cómo se presenta lo preguntado.\n' +
+  '   (3) El JUEZ: la calidad o el tono general del asunto, NO si ocurre o no. Un Juez desfavorable con perfección quiere decir que se concreta con ese tono, no que no ocurre.\n' +
+  '   (4) Los dos TESTIGOS: el camino (Testigo Derecho = el consultante, el origen del asunto; Testigo Izquierdo = el otro, el desarrollo).\n' +
+  '   (5) La CASA 4: el final del asunto.\n' +
+  '   (6) El resto de las casas, SOLO si se relacionan directamente con la pregunta. Las casas no focales cambian mucho de una tirada a otra: no las uses como evidencia fuerte ni para dar vuelta el veredicto.\n' +
+  '3. VALENCIA SEGÚN EL TEMA. Cada figura de los datos trae su valencia PARA ESTE TEMA (favorable, desfavorable o neutra) y a veces una nota. Usa esa valencia, no una genérica ni la que recuerdes. Ejemplo del error a evitar: en una pregunta de pareja Amissio es favorable (dar, entregarse al otro), no "pérdida del vínculo". Una figura neutra matiza pero no inclina el veredicto.\n' +
+  '4. Responde la pregunta concreta que se hizo. La geomancia contesta \'¿resultará X?\' con sí matizado, no matizado, o sí/no condicionado. Comprométete con un veredicto y su condición, pero NO uses lenguaje de garantía ni certeza sobre eventos futuros: evita \'garantiza\', \'asegura\', \'está garantizado\', \'altamente probable\'. La geomancia juzga la tendencia y la condición del asunto, no certifica resultados.\n' +
   '5. Si la pregunta es sobre un tercero o busca certeza absoluta sobre el futuro, da el veredicto simbólico pero reencuadra el consejo hacia lo que el consultante puede hacer u observar.\n' +
   '6. ESTRUCTURA OBLIGATORIA. La respuesta ARRANCA SIEMPRE con esta sección, antes que cualquier otra cosa:\n' +
   '   "## Respuesta directa", y debajo:\n' +
   '   (a) Una línea en negrita que abra con el veredicto en palabras corrientes: **Sí**, **Sí, pero…**, **No**, **No, salvo que…** o **Depende de…**\n' +
   '   (b) Dos o tres frases que expliquen ese veredicto SIN UN SOLO nombre de figura geomántica y SIN los términos Juez, Testigo, Sobrina, Madre, Hija, Reconciliador, escudo ni número de casa. Escríbelas como se lo explicarías a alguien que no sabe nada de geomancia y solo quiere saber a qué atenerse.\n' +
   '   (c) Si el veredicto lleva condición, una línea "**Lo que lo define:** …" también en lenguaje llano y accionable.\n' +
-  '   Recién DESPUÉS de esa sección viene la lectura técnica, bajo el título "## La lectura", con este orden: Juez → camino (Testigos) → casa del tema → estado del consultante (casa 1) → Reconciliador → consejo accionable → síntesis en una frase.\n' +
+  '   Recién DESPUÉS de esa sección viene la lectura técnica, bajo el título "## La lectura", con este orden: perfección (si se concreta y por qué vía) → casa del tema → Juez (calidad del asunto) → Testigos → casa 4 → otras casas solo si aportan a la pregunta → consejo accionable → síntesis en una frase.\n' +
   '   La sección "## Respuesta directa" y la sección "## La lectura" no pueden contradecirse.\n' +
   '6bis. LENGUAJE EN LA PARTE TÉCNICA. La primera vez que aparezca un término del arte o el nombre de una figura, agrega una glosa brevísima entre paréntesis: por ejemplo "el Juez (la sentencia general del asunto)" o "Tristitia (peso y restricción)". No repitas la glosa las veces siguientes. Español claro y legible, denso pero no enredado. Usa **negritas** en lo clave. Sin relleno místico decorativo.\n' +
   '7. Si la pregunta involucra daño a terceros, salud grave o decisiones legales/financieras mayores, da el veredicto simbólico pero recuerda que esto no sustituye consejo profesional.\n' +
-  '8. COBERTURA OBLIGATORIA: antes de la síntesis final cubre explícitamente el Juez, AMBOS Testigos, la figura de la casa del tema, la figura de casa 1 y el Reconciliador. Menciona las Sobrinas o las Madres cuando aporten información relevante, sobre todo si repiten una figura o contradicen al Juez.\n' +
-  '9. Cuando dos posiciones muestran la MISMA figura (por ejemplo ambos Testigos iguales, o una figura que se repite entre Madres, Hijas o Sobrinas), eso es significativo en geomancia: señálalo y explica qué refuerza o insiste, en lugar de describir la figura dos veces con el mismo texto.\n' +
+  '8. COBERTURA OBLIGATORIA: cubre explícitamente la perfección, la figura de la casa del tema, el Juez y AMBOS Testigos. El Reconciliador SOLO si el bloque "RECONCILIADOR" dice que es informativo; si no lo es, como mucho una frase diciendo que en esta carta no aporta información, sin interpretarlo.\n' +
+  '9. REPETICIONES: usa solo el bloque "REPETICIONES REALES". Madre N, Hija N y Sobrina N SON las casas N, N+4 y N+8: la misma figura en el mismo lugar, no dos apariciones; no las cuentes dos veces. Prohibido decir "se repite masivamente", "aparece una y otra vez" o algo parecido salvo que el bloque lo respalde: di el número exacto de casas.\n' +
   '10. ANCLAJE A LOS DATOS: usa EXCLUSIVAMENTE las figuras provistas en los datos de esta tirada. NUNCA menciones el nombre de una figura geomántica que no aparezca literalmente en los datos entregados — ni siquiera para compararla, contrastarla o ponerla de ejemplo. NUNCA inventes posiciones, casas o figuras fuera del schema provisto. Si hablas de una casa, usa exactamente la figura que la carta de 12 casas lista para esa casa.\n' +
   '11. No infieras ni asumas el estado emocional del consultante a partir de la pregunta. Interpreta la tirada, no a la persona.\n' +
   '12. Si la pregunta pide CUÁNDO ocurrirá algo (un timing, una fecha o un plazo), señala explícitamente que la geomancia clásica de este sistema no calcula fechas ni plazos: juzga la tendencia y la condición del asunto. Da el veredicto sobre hacia dónde se inclina el asunto, pero NO inventes tiempos, meses ni cantidades de días.\n' +
   '13. AGENCIA. Distingue con claridad qué parte del desenlace depende de la otra parte y qué parte depende del consultante, y apóyalo en qué Testigo lo sostiene. No atribuyas la iniciativa a la otra parte si el Testigo Izquierdo no lo respalda.\n' +
   '14. Si al leer los datos encuentras una contradicción interna, dilo abiertamente en lugar de resolverla inventando. Nunca rellenes un vacío con una figura plausible.\n' +
   '15. Responde EXCLUSIVAMENTE en español.\n' +
-  '16. NO CALCULES NADA. Todo el escudo ya está calculado y verificado por el programa: no sumes figuras, no cuentes puntos, no recompongas cómo se formó una posición ni corrijas una figura porque "debería" ser otra. No cites los binarios entre corchetes en tu texto: son solo para que identifiques cada figura. Tampoco introduzcas técnicas que no vienen en los datos (vía del punto, perfección, compañía de casas, partes, aspectos, planetas, signos): si no está calculado arriba, no existe para esta lectura.\n' +
-  '17. SIGNIFICADOS. Para el sentido de cada figura usa el bloque "SIGNIFICADO DE LAS FIGURAS DE ESTA TIRADA". Puedes matizarlo según la casa y la pregunta, pero no lo contradigas ni lo reemplaces por otra tradición.\n' +
-  '18. CÓMO LLEGAR AL VEREDICTO. Cada figura trae su naturaleza (favorable, desfavorable o neutra-contextual). Decide así, y solo después redacta:\n' +
-  '   - Juez favorable y figura de la casa del tema favorable → **Sí** (o **Sí, pero…** si un Testigo es desfavorable).\n' +
-  '   - Juez favorable y casa del tema desfavorable → **Sí, pero…**: el asunto se inclina bien pero esa área concreta trae el obstáculo.\n' +
-  '   - Juez desfavorable y casa del tema favorable → **No, salvo que…**: hay una vía, pero la sentencia general pesa en contra.\n' +
-  '   - Juez desfavorable y casa del tema desfavorable → **No**.\n' +
-  '   - Si el Juez es neutra-contextual, decide según lo que pide la pregunta (por ejemplo, perder es bueno si se busca soltar algo) y apóyate en los Testigos; si sigue sin inclinarse, **Depende de…**.\n' +
-  '   - En consulta general sin casa del tema, juzga con el Juez y los Testigos.\n' +
-  '   El veredicto de "## Respuesta directa" debe salir de esta regla. Revisa antes de terminar que lo que dices de cada posición coincide con la figura que los datos le asignan.';
+  '16. NO CALCULES NADA. El escudo, la perfección, las repeticiones y el Reconciliador ya vienen calculados por el programa: no los recalcules, no los contradigas y no busques otro modo de perfección. No sumes figuras, no cuentes puntos ni corrijas una figura porque "debería" ser otra. No cites los binarios entre corchetes en tu texto: son solo para que identifiques cada figura. No introduzcas técnicas que no vienen en los datos (vía del punto, compañía de casas, partes, aspectos, planetas, signos): si no está calculado arriba, no existe para esta lectura.\n' +
+  '17. SIGNIFICADOS. Para el sentido de cada figura usa el bloque "SIGNIFICADO Y VALENCIA DE LAS FIGURAS". Puedes matizarlo según la casa y la pregunta, pero no lo contradigas ni lo reemplaces por otra tradición.\n' +
+  '18. CÓMO SE CONCRETA, según el modo de perfección:\n' +
+  '   - Ocupación: el consultante y el asunto ya coinciden; se concreta de forma directa.\n' +
+  '   - Conjunción: los dos lados se acercan y se encuentran sin intermediarios.\n' +
+  '   - Mutación: se concreta por un cruce o intercambio de circunstancias, en otra parte de la vida del consultante.\n' +
+  '   - Traslación: se concreta a través de un intermediario. Interpreta la figura trasladora y sus casas como el PUENTE: qué o quién une ambos lados, según su significado y lo que rigen esas casas.\n' +
+  '   - Negación: no se concreta tal como se pregunta; el Juez dice el tono de lo que sí ocurre.\n' +
+  '19. CÓMO LLEGAR AL VEREDICTO. Decide así, y solo después redacta:\n' +
+  '   - Perfecciona y la casa del tema es favorable → **Sí**.\n' +
+  '   - Perfecciona y la casa del tema o el Juez son desfavorables → **Sí, pero…**: se concreta, con el costo o el tono que marcan esas figuras.\n' +
+  '   - Negación y la casa del tema o el Juez son favorables → **No, salvo que…**: la disposición es buena, pero los dos lados no se encuentran; di qué tendría que cambiar.\n' +
+  '   - Negación y nada favorable → **No**.\n' +
+  '   - Consulta general (sin casa del tema no hay perfección): juzga con el Juez y los Testigos; si no se inclinan, **Depende de…**.\n' +
+  '20. TONO. No refuerces el fatalismo: si la carta perfecciona, la "Respuesta directa" NO puede decir que el asunto termina, se pierde o fracasa. En "## La lectura" separa con claridad lo que dice la estructura (perfección y casa del tema) de los matices (Juez, Testigos y el resto).';
 
 // Las únicas 4 figuras con `elemento` verificado (ver el comentario en
 // FIGURAS): las únicas para las que el prompt puede usar ese campo.
@@ -1205,47 +1449,101 @@ const ELEMENTO_VERIFICADO = new Set(['Laetitia', 'Rubeus', 'Albus', 'Tristitia']
 /* El binario va pegado al nombre, entre corchetes: el modelo ve el dato duro
    junto al nombre y no puede sustituir uno sin contradecir al otro.
 
+   Con `temaId` se manda la valencia de la figura PARA ESE TEMA (tabla
+   VALENCIA), no la `naturaleza` genérica: la genérica hacía leer en clave
+   material preguntas que no lo son.
+
    `elemento` y `planeta` NO van al prompt salvo la excepción de abajo:
    salieron de la misma generación sin revisar que produjo la tabla de
    binarios mala (ver el comentario en FIGURAS), y el modelo no debe razonar
    sobre un dato que sabemos dudoso. Única excepción: `elemento` para las 4
    figuras verificadas. `planeta` no se manda para ninguna — no está
    verificado para ninguna de las 16. */
-function describirFigura(puntos) {
+function describirFigura(puntos, temaId) {
   const f = figuraPorPuntos(puntos);
   const elemento = ELEMENTO_VERIFICADO.has(f.nombre) ? ', elemento ' + f.elemento : '';
-  return '[' + puntos.join('·') + '] ' + f.nombre + ' (' + f.traduccion + ', ' + f.naturaleza + elemento + ')';
+  const valor = temaId ? valenciaPara(f.nombre, temaId).valencia + ' para este tema' : f.naturaleza;
+  return '[' + puntos.join('·') + '] ' + f.nombre + ' (' + f.traduccion + ', ' + valor + elemento + ')';
 }
 
-/* Los bloques de datos que van a cualquier prompt: las 16 posiciones del
-   escudo, la carta de casas, la lista blanca/negra de figuras (con el
-   binario ya delator de cualquier sustitución) y las repeticiones, ya
-   calculadas — no a discreción del modelo. Se arman aparte porque el
-   seguimiento los necesita idénticos, pero leyendo de una fila guardada en
-   vez de `estado`. */
-function bloquesDeTirada(escudo, casas, casaRelevante) {
+const NOMBRES_DE_MODO = {
+  ocupacion: 'OCUPACIÓN',
+  conjuncion: 'CONJUNCIÓN',
+  mutacion: 'MUTACIÓN',
+  traslacion: 'TRASLACIÓN',
+  negacion: 'NEGACIÓN',
+};
+
+/* El resultado de calcularPerfeccion en palabras, para el prompt. Dice qué
+   modo es, qué figura y qué casas lo producen, y la consecuencia: se
+   concreta o no. El modelo no tiene que deducir nada. */
+function describirPerfeccion(perfeccion, casas, casaTema) {
+  if (perfeccion.modo === 'no_aplica') {
+    return 'No aplica: consulta general sin casa del tema. El veredicto sale del Juez y los Testigos.';
+  }
+  const fig = function (n) { return figuraPorPuntos(casas[n - 1]).nombre; };
+  const lineas = [
+    'Significador del consultante: Casa 1, ' + fig(1) + '.',
+    'Significador del asunto: Casa ' + casaTema + ', ' + fig(casaTema) + '.',
+  ];
+  const casasTexto = perfeccion.casas.map(function (n) { return 'Casa ' + n; }).join(' y ');
+  let detalle;
+  switch (perfeccion.modo) {
+    case 'ocupacion':
+      detalle = 'la misma figura (' + perfeccion.figura + ') está en la Casa 1 y en la Casa ' + casaTema + '.';
+      break;
+    case 'conjuncion':
+      detalle = perfeccion.figura + ' aparece también en la ' + casasTexto + ', junto al otro significador.';
+      break;
+    case 'mutacion':
+      detalle = 'los dos significadores aparecen juntos en casas vecinas: ' + casasTexto + '.';
+      break;
+    case 'traslacion':
+      detalle = perfeccion.figura + ' está en la ' + casasTexto + ': junto a la Casa 1 y junto a la Casa ' +
+        casaTema + '. Es la figura que hace de puente entre ambos lados.';
+      break;
+    default:
+      detalle = 'ningún modo de perfección se cumple (ni ocupación, ni conjunción, ni mutación, ni traslación).';
+  }
+  lineas.push('Resultado: ' + NOMBRES_DE_MODO[perfeccion.modo] + ' — ' + detalle);
+  lineas.push(perfeccion.modo === 'negacion'
+    ? 'Consecuencia: el asunto NO se concreta tal como se pregunta.'
+    : 'Consecuencia: el asunto SE CONCRETA. La Respuesta directa no puede decir que termina o se pierde.');
+  return lineas.join('\n');
+}
+
+/* Los bloques de datos que van a cualquier prompt: el escudo, la carta de
+   casas con la valencia de cada figura para el tema, lo calculado por el
+   programa (perfección, Reconciliador, repeticiones reales) y la lista
+   blanca/negra de figuras. Todo lo determinista va resuelto: el modelo
+   interpreta, no calcula. Se arma sin leer `estado` para poder probarlo. */
+function bloquesDeTirada(escudo, casas, casaRelevante, temaId) {
+  const d = function (puntos) { return describirFigura(puntos, temaId); };
+
+  // Madre N, Hija N y Sobrina N se marcan como la casa que son: listarlas
+  // sin esa marca hacía creer al modelo que eran figuras aparte.
   const bloqueEscudo = [
-    'Madre 1: ' + describirFigura(escudo.madres[0]),
-    'Madre 2: ' + describirFigura(escudo.madres[1]),
-    'Madre 3: ' + describirFigura(escudo.madres[2]),
-    'Madre 4: ' + describirFigura(escudo.madres[3]),
-    'Hija 1: ' + describirFigura(escudo.hijas[0]),
-    'Hija 2: ' + describirFigura(escudo.hijas[1]),
-    'Hija 3: ' + describirFigura(escudo.hijas[2]),
-    'Hija 4: ' + describirFigura(escudo.hijas[3]),
-    'Sobrina 1: ' + describirFigura(escudo.sobrinas[0]),
-    'Sobrina 2: ' + describirFigura(escudo.sobrinas[1]),
-    'Sobrina 3: ' + describirFigura(escudo.sobrinas[2]),
-    'Sobrina 4: ' + describirFigura(escudo.sobrinas[3]),
-    'Testigo Derecho: ' + describirFigura(escudo.testigoDerecho),
-    'Testigo Izquierdo: ' + describirFigura(escudo.testigoIzquierdo),
-    'Juez: ' + describirFigura(escudo.juez),
-    'Reconciliador: ' + describirFigura(escudo.reconciliador),
+    'Madre 1 (= Casa 1): ' + d(escudo.madres[0]),
+    'Madre 2 (= Casa 2): ' + d(escudo.madres[1]),
+    'Madre 3 (= Casa 3): ' + d(escudo.madres[2]),
+    'Madre 4 (= Casa 4): ' + d(escudo.madres[3]),
+    'Hija 1 (= Casa 5): ' + d(escudo.hijas[0]),
+    'Hija 2 (= Casa 6): ' + d(escudo.hijas[1]),
+    'Hija 3 (= Casa 7): ' + d(escudo.hijas[2]),
+    'Hija 4 (= Casa 8): ' + d(escudo.hijas[3]),
+    'Sobrina 1 (= Casa 9): ' + d(escudo.sobrinas[0]),
+    'Sobrina 2 (= Casa 10): ' + d(escudo.sobrinas[1]),
+    'Sobrina 3 (= Casa 11): ' + d(escudo.sobrinas[2]),
+    'Sobrina 4 (= Casa 12): ' + d(escudo.sobrinas[3]),
+    'Testigo Derecho: ' + d(escudo.testigoDerecho),
+    'Testigo Izquierdo: ' + d(escudo.testigoIzquierdo),
+    'Juez: ' + d(escudo.juez),
+    'Reconciliador: ' + d(escudo.reconciliador),
   ].join('\n');
 
   const bloqueCasas = CASAS.map(function (casaInfo, idx) {
     const marca = casaInfo.numero === casaRelevante ? '  ← CASA DEL TEMA' : '';
-    return 'Casa ' + casaInfo.numero + ' (' + casaInfo.significado + '): ' + describirFigura(casas[idx]) + marca;
+    return 'Casa ' + casaInfo.numero + ' (' + casaInfo.significado + '): ' + d(casas[idx]) + marca;
   }).join('\n');
 
   const presentes = [];
@@ -1260,28 +1558,46 @@ function bloquesDeTirada(escudo, casas, casaRelevante) {
     '--- FIGURAS AUSENTES EN ESTA TIRADA (prohibido nombrarlas, ni para comparar) ---\n' +
     (ausentes.length ? ausentes.join(', ') : '(ninguna: esta tirada usa las 16)');
 
+  const perfeccion = calcularPerfeccion(casas, casaRelevante);
+  const bloquePerfeccion =
+    '--- PERFECCIÓN (calculada por el programa; decide si el asunto se concreta) ---\n' +
+    describirPerfeccion(perfeccion, casas, casaRelevante);
+
+  const reconciliador = reconciliadorInformativo(escudo);
+  const bloqueReconciliador =
+    '--- RECONCILIADOR ---\n' +
+    (reconciliador.informativo
+      ? 'Informativo: interprétalo como matiz de cómo el desenlace afecta al consultante.'
+      : 'NO informativo en esta carta: ' + reconciliador.motivo + ' No lo interpretes.');
+
   const repeticiones = detectarRepeticiones(escudo, casas);
   const bloqueRepeticiones =
-    '--- REPETICIONES YA CALCULADAS (no las recuentes, úsalas tal cual) ---\n' +
-    (repeticiones.length ? repeticiones.join('\n') : 'Ninguna figura se repite en esta tirada.');
+    '--- REPETICIONES REALES (sobre las 12 casas; no las recuentes, úsalas tal cual) ---\n' +
+    (repeticiones.length ? repeticiones.join('\n') : 'Ninguna figura se repite entre las casas.');
 
   // El sentido de cada figura sale de la tabla de la app, no de lo que el
   // modelo recuerde: así no mezcla tradiciones ni le atribuye a una figura
   // el significado de otra. Solo las presentes, para no tentarlo a nombrar
-  // las ausentes.
+  // las ausentes. La valencia es la del tema consultado, con su nota.
   const bloqueSignificados =
-    '--- SIGNIFICADO DE LAS FIGURAS DE ESTA TIRADA (usa este sentido, no otro) ---\n' +
+    '--- SIGNIFICADO Y VALENCIA DE LAS FIGURAS DE ESTA TIRADA (usa este sentido, no otro) ---\n' +
     presentes.map(function (nombre) {
       const f = FIGURAS.find(function (x) { return x.nombre === nombre; });
-      return f.nombre + ' (' + f.traduccion + ', ' + f.naturaleza + '): ' + f.significado;
+      const v = valenciaPara(nombre, temaId);
+      return f.nombre + ' (' + f.traduccion + ') — ' + v.valencia + ' para este tema' +
+        (v.nota ? ' (' + v.nota + ')' : '') + ': ' + f.significado;
     }).join('\n');
 
   return {
     bloqueEscudo: bloqueEscudo,
     bloqueCasas: bloqueCasas,
     bloqueListaNegra: bloqueListaNegra,
+    bloquePerfeccion: bloquePerfeccion,
+    bloqueReconciliador: bloqueReconciliador,
     bloqueRepeticiones: bloqueRepeticiones,
     bloqueSignificados: bloqueSignificados,
+    perfeccion: perfeccion,
+    reconciliador: reconciliador,
     presentes: presentes,
     ausentes: ausentes,
   };
@@ -1290,13 +1606,11 @@ function bloquesDeTirada(escudo, casas, casaRelevante) {
 function construirPrompt() {
   const e = estado.escudo;
   const casaRelevante = estado.tema.casa;
-  const figuraCasaRelevante = casaRelevante ? describirFigura(e.casas[casaRelevante - 1]) : 'No aplica (consulta general, solo se juzga con el Juez).';
-  const figuraCasa1 = describirFigura(e.casas[0]);
+  const temaId = estado.tema.id;
+  const figuraCasaRelevante = casaRelevante ? describirFigura(e.casas[casaRelevante - 1], temaId) : 'No aplica (consulta general, solo se juzga con el Juez).';
   const fechaTexto = estado.fecha.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
 
-  const bloques = bloquesDeTirada(e, e.casas, casaRelevante);
-  const bloqueEscudo = bloques.bloqueEscudo;
-  const bloqueCasas = bloques.bloqueCasas;
+  const bloques = bloquesDeTirada(e, e.casas, casaRelevante, temaId);
 
   // Con hilo activo, la prohibición de la lista negra es sobre el escudo de
   // HOY únicamente: la regla H2 pide, aparte, nombrar una figura de una
@@ -1314,12 +1628,13 @@ function construirPrompt() {
       'Fecha: ' + fechaTexto + '\n' +
       'Pregunta: ' + estado.pregunta + '\n' +
       'Tema seleccionado: ' + estado.tema.etiqueta + (casaRelevante ? ' (casa ' + casaRelevante + ')' : '') + '\n\n' +
-      '--- ESCUDO COMPLETO ---\n' + bloqueEscudo + '\n\n' +
-      '--- CARTA DE 12 CASAS (figura asignada a cada casa) ---\n' + bloqueCasas + '\n\n' +
+      bloques.bloquePerfeccion + '\n\n' +
       '--- FIGURA EN LA CASA DEL TEMA ---\n' + figuraCasaRelevante + '\n\n' +
-      '--- FIGURA EN CASA 1 (el consultante) ---\n' + figuraCasa1 + '\n\n' +
-      bloques.bloqueListaNegra + notaListaNegra + '\n\n' +
+      '--- ESCUDO COMPLETO ---\n' + bloques.bloqueEscudo + '\n\n' +
+      '--- CARTA DE 12 CASAS (figura asignada a cada casa) ---\n' + bloques.bloqueCasas + '\n\n' +
+      bloques.bloqueReconciliador + '\n\n' +
       bloques.bloqueRepeticiones + '\n\n' +
+      bloques.bloqueListaNegra + notaListaNegra + '\n\n' +
       bloques.bloqueSignificados + '\n\n' +
       (bloqueHilo || '') +
       'Redacta la interpretación siguiendo exactamente la jerarquía y estructura indicadas en las reglas. ' +
@@ -3755,6 +4070,12 @@ if (typeof module !== 'undefined' && module.exports) {
     describirFigura: describirFigura,
     posicionesDeEscudo: posicionesDeEscudo,
     detectarRepeticiones: detectarRepeticiones,
+    repeticionesReales: repeticionesReales,
+    reconciliadorInformativo: reconciliadorInformativo,
+    calcularPerfeccion: calcularPerfeccion,
+    valenciaPara: valenciaPara,
+    VALENCIA: VALENCIA,
+    bloquesDeTirada: bloquesDeTirada,
     verificarEscudo: verificarEscudo,
     revisarAsignaciones: revisarAsignaciones,
     avisosDeInterpretacion: avisosDeInterpretacion,
