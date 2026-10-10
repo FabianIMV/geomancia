@@ -1186,7 +1186,17 @@ const INSTRUCCIONES_SISTEMA =
   '12. Si la pregunta pide CUÁNDO ocurrirá algo (un timing, una fecha o un plazo), señala explícitamente que la geomancia clásica de este sistema no calcula fechas ni plazos: juzga la tendencia y la condición del asunto. Da el veredicto sobre hacia dónde se inclina el asunto, pero NO inventes tiempos, meses ni cantidades de días.\n' +
   '13. AGENCIA. Distingue con claridad qué parte del desenlace depende de la otra parte y qué parte depende del consultante, y apóyalo en qué Testigo lo sostiene. No atribuyas la iniciativa a la otra parte si el Testigo Izquierdo no lo respalda.\n' +
   '14. Si al leer los datos encuentras una contradicción interna, dilo abiertamente en lugar de resolverla inventando. Nunca rellenes un vacío con una figura plausible.\n' +
-  '15. Responde EXCLUSIVAMENTE en español.';
+  '15. Responde EXCLUSIVAMENTE en español.\n' +
+  '16. NO CALCULES NADA. Todo el escudo ya está calculado y verificado por el programa: no sumes figuras, no cuentes puntos, no recompongas cómo se formó una posición ni corrijas una figura porque "debería" ser otra. No cites los binarios entre corchetes en tu texto: son solo para que identifiques cada figura. Tampoco introduzcas técnicas que no vienen en los datos (vía del punto, perfección, compañía de casas, partes, aspectos, planetas, signos): si no está calculado arriba, no existe para esta lectura.\n' +
+  '17. SIGNIFICADOS. Para el sentido de cada figura usa el bloque "SIGNIFICADO DE LAS FIGURAS DE ESTA TIRADA". Puedes matizarlo según la casa y la pregunta, pero no lo contradigas ni lo reemplaces por otra tradición.\n' +
+  '18. CÓMO LLEGAR AL VEREDICTO. Cada figura trae su naturaleza (favorable, desfavorable o neutra-contextual). Decide así, y solo después redacta:\n' +
+  '   - Juez favorable y figura de la casa del tema favorable → **Sí** (o **Sí, pero…** si un Testigo es desfavorable).\n' +
+  '   - Juez favorable y casa del tema desfavorable → **Sí, pero…**: el asunto se inclina bien pero esa área concreta trae el obstáculo.\n' +
+  '   - Juez desfavorable y casa del tema favorable → **No, salvo que…**: hay una vía, pero la sentencia general pesa en contra.\n' +
+  '   - Juez desfavorable y casa del tema desfavorable → **No**.\n' +
+  '   - Si el Juez es neutra-contextual, decide según lo que pide la pregunta (por ejemplo, perder es bueno si se busca soltar algo) y apóyate en los Testigos; si sigue sin inclinarse, **Depende de…**.\n' +
+  '   - En consulta general sin casa del tema, juzga con el Juez y los Testigos.\n' +
+  '   El veredicto de "## Respuesta directa" debe salir de esta regla. Revisa antes de terminar que lo que dices de cada posición coincide con la figura que los datos le asignan.';
 
 // Las únicas 4 figuras con `elemento` verificado (ver el comentario en
 // FIGURAS): las únicas para las que el prompt puede usar ese campo.
@@ -1255,11 +1265,23 @@ function bloquesDeTirada(escudo, casas, casaRelevante) {
     '--- REPETICIONES YA CALCULADAS (no las recuentes, úsalas tal cual) ---\n' +
     (repeticiones.length ? repeticiones.join('\n') : 'Ninguna figura se repite en esta tirada.');
 
+  // El sentido de cada figura sale de la tabla de la app, no de lo que el
+  // modelo recuerde: así no mezcla tradiciones ni le atribuye a una figura
+  // el significado de otra. Solo las presentes, para no tentarlo a nombrar
+  // las ausentes.
+  const bloqueSignificados =
+    '--- SIGNIFICADO DE LAS FIGURAS DE ESTA TIRADA (usa este sentido, no otro) ---\n' +
+    presentes.map(function (nombre) {
+      const f = FIGURAS.find(function (x) { return x.nombre === nombre; });
+      return f.nombre + ' (' + f.traduccion + ', ' + f.naturaleza + '): ' + f.significado;
+    }).join('\n');
+
   return {
     bloqueEscudo: bloqueEscudo,
     bloqueCasas: bloqueCasas,
     bloqueListaNegra: bloqueListaNegra,
     bloqueRepeticiones: bloqueRepeticiones,
+    bloqueSignificados: bloqueSignificados,
     presentes: presentes,
     ausentes: ausentes,
   };
@@ -1298,6 +1320,7 @@ function construirPrompt() {
       '--- FIGURA EN CASA 1 (el consultante) ---\n' + figuraCasa1 + '\n\n' +
       bloques.bloqueListaNegra + notaListaNegra + '\n\n' +
       bloques.bloqueRepeticiones + '\n\n' +
+      bloques.bloqueSignificados + '\n\n' +
       (bloqueHilo || '') +
       'Redacta la interpretación siguiendo exactamente la jerarquía y estructura indicadas en las reglas. ' +
       'Recuerda: solo puedes nombrar figuras que aparezcan literalmente en los datos de arriba.';
@@ -1554,7 +1577,9 @@ async function revisarPregunta(pregunta) {
   return revision;
 }
 
-const TIMEOUT_GEMINI_MS = 20000;
+// Con el razonamiento encendido la respuesta tarda bastante más que antes.
+const TIMEOUT_GEMINI_MS = 60000;
+const PRESUPUESTO_RAZONAMIENTO = 3072;
 
 /* Pide la interpretación al proxy del servidor, donde vive la clave de Gemini.
    Devuelve null si el proxy no está desplegado, para poder seguir con la clave
@@ -1658,14 +1683,18 @@ async function llamarGeminiConModelo(modelo, apiKey, prompt, conThinkingConfig) 
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: Object.assign(
           {
-            temperature: 0.6,
+            // Baja: es una lectura atada a datos, no escritura creativa. Con 0.6
+            // el modelo se tomaba licencias con las figuras.
+            temperature: 0.4,
             topP: 0.9,
-            // 2048 se quedaba corto: en los modelos 2.5 el "thinking" consume parte
-            // del presupuesto de salida y la interpretación llegaba cortada o vacía.
-            // Sin thinkingConfig el modelo puede razonar, así que se da más margen.
-            maxOutputTokens: conThinkingConfig ? 4096 : 8192,
+            // El razonamiento consume del mismo presupuesto de salida, así que
+            // el tope es PRESUPUESTO_RAZONAMIENTO + lo que ocupa la lectura.
+            maxOutputTokens: conThinkingConfig ? 12288 : 8192,
           },
-          conThinkingConfig ? { thinkingConfig: { thinkingBudget: 0 } } : {}
+          // Antes iba thinkingBudget: 0, que apaga el razonamiento: el modelo
+          // escribía de corrido sin cruzar Juez, Testigos y casas, y ahí se
+          // "mareaba". Ahora piensa antes de redactar.
+          conThinkingConfig ? { thinkingConfig: { thinkingBudget: PRESUPUESTO_RAZONAMIENTO } } : {}
         ),
       }),
       signal: controlador.signal,
