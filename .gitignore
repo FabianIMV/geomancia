@@ -3,3 +3,6 @@ package-lock.json
 test-results/
 playwright-report/
 informe-salud.txt
+
+# Volcados en claro de la base: solo se commitean cifrados (*.gpg)
+respaldos/*.sql
