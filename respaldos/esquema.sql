@@ -112,7 +112,7 @@ CREATE TABLE IF NOT EXISTS "public"."consultas" (
 ALTER TABLE "public"."consultas" OWNER TO "postgres";
 
 
-COMMENT ON COLUMN "public"."consultas"."origen_id" IS 'Si no es null, esta fila es un seguimiento: una pregunta nueva sobre el escudo ya levantado en la consulta apuntada. El escudo se copia para que la fila se pueda leer y auditar sola. Borrar la tirada madre se lleva su hilo entero (on delete cascade).';
+COMMENT ON COLUMN "public"."consultas"."origen_id" IS 'Si no es null, esta consulta continúa el asunto de la consulta apuntada: es una tirada propia y distinta, levantada más tarde, cuya interpretación se pidió con las consultas anteriores del hilo a la vista. El hilo es plano: los pasos apuntan siempre a la raíz. Borrar la raíz se lleva el hilo entero (on delete cascade).';
 
 
 
