@@ -146,8 +146,11 @@ su propia clave de Gemini: las consultas pasan por el proxy.
 
 ### 3. Respaldo automático de la base
 
-`backup.yml` corre los lunes y commitea al repo (`respaldos/`) un volcado de la base. Usa
-los mismos secretos de Supabase; se salta si no están.
+`backup.yml` corre los lunes y commitea al repo (`respaldos/`) un volcado de la base
+**cifrado con GPG** (el repo es público y el volcado incluye usuarios, hashes de
+contraseñas y la bitácora). Usa los mismos secretos de Supabase más `RESPALDO_CLAVE`
+(una frase larga y aleatoria; guárdala también fuera de GitHub, sin ella el respaldo no
+sirve). Se salta si falta alguno. Para restaurar: `gpg -d respaldos/datos.sql.gpg > datos.sql`.
 
 ## Estructura del repositorio
 
